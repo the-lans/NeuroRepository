@@ -198,9 +198,11 @@ void NMatrix<NType>::resize(int sizeRow, int sizeColumn)
 {
     sizeRow = sizeRow > this->lenRow ? sizeRow : this->lenRow;
     sizeColumn = sizeColumn > this->sizeColumn ? sizeColumn : this->sizeColumn;
+
     if((this->sizeRow != sizeRow)&&(this->sizeColumn != sizeColumn))
     {
         int i, j;
+        int oldSizeColumn = this->sizeColumn;
         NType* p = this->data;
         this->data = new NType[sizeRow * sizeColumn];
         this->sizeRow = sizeRow;
@@ -209,7 +211,7 @@ void NMatrix<NType>::resize(int sizeRow, int sizeColumn)
         {
             for(j = 0; j < this->lenColumn; j++)
             {
-                this->data[i*this->sizeColumn + j] = p[i*this->sizeColumn + j];
+                this->data[i*this->sizeColumn + j] = p[i*oldSizeColumn + j];
             }
         }
         if(p != nullptr) {delete[] p;}
