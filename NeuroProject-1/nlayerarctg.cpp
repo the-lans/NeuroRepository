@@ -5,6 +5,7 @@ template <typename NType>
 NLayerArctg<NType>::NLayerArctg()
 {
     this->type = NLayerType::NFuncArctg;
+    this->typeDerivat = NLayerDerivat::NDerivatSum;
     this->koef = 1;
 }
 

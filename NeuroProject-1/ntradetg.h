@@ -19,6 +19,9 @@ protected:
     NMatrix<NType>* dataMtrx;
     NMatrix<NType> dataPeriod;
     NMatrix<NType> dataTg;
+    NType koefTg;
+    NType koefPrice;
+    NType koefVolume;
 public:
     void setPeriod(int val);
     int getPeriod();
@@ -27,6 +30,12 @@ public:
     void setLenIn(int val);
     int getLenIn();
     void setMtrx(NMatrix<NType>* mtrx);
+    void setKoefTg(NType val);
+    NType getKoefTg();
+    void setKoefPrice(NType val);
+    NType getKoefPrice();
+    void setKoefVolume(NType val);
+    NType getKoefVolume();
 public:
     virtual void prerun(NMatrix<NType>& tab);
     virtual NArray<NType>* postrun();

@@ -3,8 +3,9 @@
 template <typename NType>
 INLayer<NType>::INLayer()
 {
-    this->type = NLayerType::NFuncNone;
     this->koef = 1;
+    this->type = NLayerType::NFuncNone;
+    this->typeDerivat = NLayerDerivat::NDerivatOut;
     this->energyRegularization = 0;
 }
 
@@ -12,8 +13,9 @@ template <typename NType>
 INLayer<NType>::INLayer(INLayer<NType>& obj):
     weigth(obj.weigth), bias(obj.bias), output(obj.output), sum(obj.sum)
 {
-    this->type = obj.getType();
     this->koef = obj.getKoef();
+    this->type = obj.getType();
+    this->typeDerivat = obj.getTypeDerivat();
     this->energyRegularization = obj.getEnergyRegularization();
 }
 
@@ -25,8 +27,9 @@ INLayer<NType>& INLayer<NType>::operator=(INLayer<NType>& obj)
     this->output = obj.output;
     this->sum = obj.sum;
 
-    this->type = obj.getType();
     this->koef = obj.getKoef();
+    this->type = obj.getType();
+    this->typeDerivat = obj.getTypeDerivat();
     this->energyRegularization = obj.getEnergyRegularization();
 
     return *this;
@@ -53,6 +56,12 @@ template <typename NType>
 NLayerType INLayer<NType>::getType()
 {
     return this->type;
+}
+
+template <typename NType>
+NLayerDerivat INLayer<NType>::getTypeDerivat()
+{
+    return this->typeDerivat;
 }
 
 template <typename NType>

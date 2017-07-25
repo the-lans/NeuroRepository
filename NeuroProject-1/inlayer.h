@@ -7,7 +7,8 @@
 #include <ctime>
 #include <math.h>
 
-enum NLayerType {NFuncNone, NFuncTanh, NFuncSoftsign, NFuncArctg, NFuncLinear};
+enum class NLayerType {NFuncNone, NFuncTanh, NFuncSoftsign, NFuncArctg, NFuncLinear};
+enum class NLayerDerivat {NDerivatSum, NDerivatOut};
 
 template <typename NType>
 class INLayer
@@ -25,11 +26,13 @@ public:
 protected:
     NType koef;
     NLayerType type;
+    NLayerDerivat typeDerivat;
     NType energyRegularization;
 public:
     void setKoef(NType koef);
     NType getKoef();
     NLayerType getType();
+    NLayerDerivat getTypeDerivat();
     NType getEnergyRegularization();
 public:
     virtual void init(NType value);

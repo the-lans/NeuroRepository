@@ -5,7 +5,8 @@ template <typename NType>
 NLayerTanh<NType>::NLayerTanh()
 {
     this->type = NLayerType::NFuncTanh;
-    this->koef = 2;
+    this->typeDerivat = NLayerDerivat::NDerivatOut;
+    this->koef = 1;
 }
 
 template <typename NType>
@@ -16,12 +17,11 @@ NLayerTanh<NType>::~NLayerTanh()
 template <typename NType>
 NType NLayerTanh<NType>::activation(NType& x)
 {
-    NType val = exp(this->koef * x);
-    return (val - 1)/(val + 1);
+    return tanh(this->koef * x);
 }
 
 template <typename NType>
 NType NLayerTanh<NType>::derivative(NType& y)
 {
-    return (0.5 * this->koef * (1 - y*y));
+    return (this->koef * (1 - y*y));
 }

@@ -4,6 +4,7 @@ template <typename NType>
 NLayerSoftsign<NType>::NLayerSoftsign()
 {
     this->type = NLayerType::NFuncSoftsign;
+    this->typeDerivat = NLayerDerivat::NDerivatOut;
     this->koef = 1;
 }
 

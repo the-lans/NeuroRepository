@@ -5,6 +5,9 @@ template <typename NType>
 NTradeTg<NType>::NTradeTg():
     INeuroNet<NType>()
 {
+    this->koefTg = 10000;
+    this->koefPrice = 1;
+    this->koefVolume = 1;
     this->period = 1;
     this->pt = NPriceType::PriceClose;
     this->lenIn = 0;
@@ -15,6 +18,9 @@ template <typename NType>
 NTradeTg<NType>::NTradeTg(NTradeTg<NType>& obj):
     INeuroNet<NType>(obj)
 {
+    this->koefTg = obj.getKoefTg();
+    this->koefPrice = obj.getKoefPrice();
+    this->koefVolume = obj.getKoefVolume();
     this->period = obj.getPeriod();
     this->pt = obj.getPT();
     this->lenIn = obj.getLenIn();
@@ -25,6 +31,9 @@ template <typename NType>
 NTradeTg<NType>::NTradeTg(int size):
     INeuroNet<NType>(size)
 {
+    this->koefTg = 10000;
+    this->koefPrice = 1;
+    this->koefVolume = 1;
     this->period = 1;
     this->pt = NPriceType::PriceClose;
     this->lenIn = 0;
@@ -74,6 +83,42 @@ void NTradeTg<NType>::setMtrx(NMatrix<NType>* mtrx)
 }
 
 template <typename NType>
+void NTradeTg<NType>::setKoefTg(NType val)
+{
+    this->koefTg = val;
+}
+
+template <typename NType>
+NType NTradeTg<NType>::getKoefTg()
+{
+    return this->koefTg;
+}
+
+template <typename NType>
+void NTradeTg<NType>::setKoefPrice(NType val)
+{
+    this->koefPrice = val;
+}
+
+template <typename NType>
+NType NTradeTg<NType>::getKoefPrice()
+{
+    return this->koefPrice;
+}
+
+template <typename NType>
+void NTradeTg<NType>::setKoefVolume(NType val)
+{
+    this->koefVolume = val;
+}
+
+template <typename NType>
+NType NTradeTg<NType>::getKoefVolume()
+{
+    return this->koefVolume;
+}
+
+template <typename NType>
 void NTradeTg<NType>::prerun(NMatrix<NType>& tab)
 {
     this->dataMtrx = &tab;
@@ -85,8 +130,8 @@ void NTradeTg<NType>::prerun(NMatrix<NType>& tab)
 template <typename NType>
 NArray<NType>* NTradeTg<NType>::postrun()
 {
-    this->outpostrun.init(0, 0);
-    NType value = tan(this->outrun->get(0));
+    this->outpostrun.clear();
+    NType value = tan(this->outrun->get(0)) / (this->koefTg * this->koefPrice);
     this->outpostrun.push(value);
     return &(this->outpostrun);
 }
@@ -103,7 +148,7 @@ void NTradeTg<NType>::calcPeriod()
     NType curLow, vLow = this->dataMtrx->get(0, 2);
     NType vVolume = 0;
 
-    for(ind = 1; ind < this->dataMtrx->getLenRow(); ind++)
+    for(ind = 1; ind <= this->dataMtrx->getLenRow(); ind++)
     {
         vClose = this->dataMtrx->get(ind-1, 3);
         curHigh = this->dataMtrx->get(ind-1, 1);
@@ -120,11 +165,14 @@ void NTradeTg<NType>::calcPeriod()
             this->dataPeriod.set(vLow, knd, 2);
             this->dataPeriod.set(vVolume, knd, 4);
 
-            vOpen = this->dataMtrx->get(ind, 0);
-            vHigh = this->dataMtrx->get(ind, 1);
-            vLow = this->dataMtrx->get(ind, 2);
-            vVolume = 0;
-            knd++;
+            if(ind < this->dataMtrx->getLenRow())
+            {
+                vOpen = this->dataMtrx->get(ind, 0);
+                vHigh = this->dataMtrx->get(ind, 1);
+                vLow = this->dataMtrx->get(ind, 2);
+                vVolume = 0;
+                knd++;
+            }
         }
     }
 }
@@ -139,8 +187,17 @@ void NTradeTg<NType>::calcTg()
     {
         for(int jnd = 0; jnd < this->dataPeriod.getLenColumn(); jnd++)
         {
-            dValue = atan(this->dataPeriod.get(ind, 0) - this->dataPeriod.get(ind-1, 0));
-            this->dataTg.set(dValue, ind, jnd);
+            dValue = this->dataPeriod.get(ind, jnd) - this->dataPeriod.get(ind-1, jnd);
+            if(jnd == this->dataPeriod.getLenColumn()-1) // Volume
+            {
+                dValue = this->koefVolume * dValue;
+            }
+            else // Price
+            {
+                dValue = this->koefTg * this->koefPrice * dValue;
+            }
+            dValue = atan(dValue);
+            this->dataTg.set(dValue, ind-1, jnd);
         }
     }
 }

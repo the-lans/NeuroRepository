@@ -17,6 +17,7 @@
 
 #include "ineuronet.cpp"
 #include "naprox.cpp"
+#include "ntradetg.cpp"
 #include "trainbp.cpp"
 
 typedef double NTypeValue;
@@ -38,18 +39,24 @@ void MainWindow::on_pushButton_clicked()
     //ui->textBrowser->setText("Hello world!");
 
     // Чтение из файла CSV примеров
-    DataCSVAprox<NTypeValue> dt;
+    //DataCSVAprox<NTypeValue> dt;
+    DataCSVTrade<NTypeValue> dt;
     dt.read("D:\\ProgramProjects\\NeuroProject\\NeuroProject-1\\test.csv", ",");
     dt.calculate();
     NMatrix<NTypeValue>& tab = dt.getMatrix();
 
     // Конструктор нейросети
-    NAprox<NTypeValue> net;
-    NArray<int> n_num; int val_num;
-    NArray<NLayerType> n_lay_type; NLayerType val_lay_type;
-    val_num = 1; n_num.push(val_num);
-    val_num = 4; n_num.push(val_num); val_lay_type = NLayerType::NFuncSoftsign; n_lay_type.push(val_lay_type);
-    val_num = 1; n_num.push(val_num); val_lay_type = NLayerType::NFuncLinear; n_lay_type.push(val_lay_type);
+    NArray<int> n_num; //int val_num;
+    NArray<NLayerType> n_lay_type; //NLayerType val_lay_type;
+    n_num.push(4*8);
+    n_num.push(4); n_lay_type.push(NLayerType::NFuncTanh);
+    n_num.push(2); n_lay_type.push(NLayerType::NFuncTanh);
+    n_num.push(1); n_lay_type.push(NLayerType::NFuncArctg);
+    //NAprox<NTypeValue> net;
+    NTradeTg<NTypeValue> net;
+    net.setPeriod(1);
+    net.setLenIn(8);
+    net.setPT(NPriceType::PriceHigh);
     net.setValueWeight(0.5);
     net.ginit(n_num, n_lay_type);
 
@@ -77,7 +84,11 @@ void MainWindow::on_pushButton_clicked()
     QString str, valNum;
     if(tab.getLenRow() > 0)
     {
+        net.setKoefTg(10000);
+        net.setKoefPrice(0.1);
+        net.setKoefVolume(0.1);
         net.prerun(tab);
+
         net.runExamples(NSetType::NSetTrain);
         net.funcRegularization();
 
@@ -109,11 +120,13 @@ void MainWindow::on_pushButton_clicked()
         for(int i = 0; i < net.exam.getLength(); i++)
         {
             net.setOutRun(&(net.exam.get(i)->outrun));
-            net.postrun();
             val = net.exam.get(i)->outrun.get(0);
-            str += "out = "; valNum.setNum(val); str += valNum + "\n";
+            str += "outrun = "; valNum.setNum(val); str += valNum + "\n";
+            net.postrun();
             val = net.outpostrun.get(0);
-            str += "outpost = "; valNum.setNum(val); str += valNum + "\n";
+            str += "outpostrun = "; valNum.setNum(val); str += valNum + "\n";
+            val = net.exam.get(i)->output.get(0);
+            str += "out = "; valNum.setNum(val); str += valNum + "\n";
         }
     }
     else

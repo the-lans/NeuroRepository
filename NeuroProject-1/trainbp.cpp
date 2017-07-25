@@ -201,11 +201,19 @@ template <typename NType>
 void TrainBP<NType>::calculateError(NExample<NType>* exm)
 {
     int k, j;
-    this->pOutrun = exm->outrun.getData();
 
     // Выходной слой
     NArray<NType>& er = this->net->derivEnergy(exm);
     k = lenLay-1;
+    if(pLay[k]->getTypeDerivat() == NLayerDerivat::NDerivatOut)
+    {
+        pOutrun = exm->outrun.getData();
+    }
+    else
+    {
+        pOutrun = pLay[k]->sum.getData();
+    }
+
     for(j = 0; j < er.getLength(); j++)
     {
         pMas[k]->set(pLay[k]->derivative(pOutrun[j]), j);
@@ -215,7 +223,15 @@ void TrainBP<NType>::calculateError(NExample<NType>* exm)
     // Скрытый слой
     for(k = lenLay-2; k >= 0; k--)
     {
-        pOutrun = pLay[k]->output.getData();
+        if(pLay[k]->getTypeDerivat() == NLayerDerivat::NDerivatOut)
+        {
+            pOutrun = pLay[k]->output.getData();
+        }
+        else
+        {
+            pOutrun = pLay[k]->sum.getData();
+        }
+
         for(j = 0; j < pLay[k]->weigth.getLenColumn(); j++)
         {
             pMas[k]->set(pLay[k]->derivative(pOutrun[j]), j);

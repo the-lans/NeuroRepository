@@ -4,6 +4,7 @@ template <typename NType>
 NLayerLinear<NType>::NLayerLinear()
 {
     this->type = NLayerType::NFuncLinear;
+    this->typeDerivat = NLayerDerivat::NDerivatOut;
     this->koef = 1;
 }
 
