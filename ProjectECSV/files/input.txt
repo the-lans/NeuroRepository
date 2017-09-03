@@ -1,0 +1,15 @@
+$base.val = 0.158 //Переменная TempClass
+$base.color = 0; 2; 1; 2 //Цвета
+
+//Субкласс
+$base.sub.vec = 123; 321; 753
+$base.sub.val_a = 12
+$base.sub.val_b = 1.120
+
+$base.sub.vec = 149; 859
+$base.sub.val_a = 0
+$base.sub.val_b = 1.859
+
+$base.sub.vec = 872; 36; 98
+$base.sub.val_a = -8
+$base.sub.val_b = 1.530
