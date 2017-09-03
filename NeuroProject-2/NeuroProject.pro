@@ -25,7 +25,9 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    dataecsv.cpp
+    dataecsv.cpp \
+    structecsv.cpp \
+    funcecsv.cpp
 
 HEADERS  += mainwindow.h \
     narray.h \
@@ -46,6 +48,10 @@ HEADERS  += mainwindow.h \
     trainbp.h \
     structecsv.h \
     iobjectecsv.h \
-    dataecsv.h
+    dataecsv.h \
+    funcecsv.h \
+    nexamples.h \
+    nmatrixecsv.h \
+    noperators.h
 
 FORMS    += mainwindow.ui

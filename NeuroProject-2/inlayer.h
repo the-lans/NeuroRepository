@@ -3,6 +3,7 @@
 
 #include "narray.h"
 #include "nmatrix.h"
+#include "iobjectecsv.h"
 #include <iostream>
 #include <ctime>
 #include <math.h>
@@ -11,7 +12,7 @@ enum class NLayerType {NFuncNone, NFuncTanh, NFuncSoftsign, NFuncArctg, NFuncLin
 enum class NLayerDerivat {NDerivatSum, NDerivatOut};
 
 template <typename NType>
-class INLayer
+class INLayer: public IObjectECSV
 {
 public:
     INLayer();
@@ -19,15 +20,15 @@ public:
     INLayer<NType>& operator=(INLayer<NType>& obj);
     virtual ~INLayer();
 public:
-    NMatrix<NType> weigth;
-    NArray<NType> bias;
-    NArray<NType> output;
-    NArray<NType> sum;
+    NMatrix<NType> weigth; //Матрица весов
+    NArray<NType> bias; //Вектор смещений
+    NArray<NType> output; //Расчётный выход слоя
+    NArray<NType> sum; //Промежуточные значения сумм
 protected:
-    NType koef;
-    NLayerType type;
-    NType energyRegularization;
-    NLayerDerivat typeDerivat;
+    NType koef; //Коэффициент функции активации
+    NLayerType type; //Тип слоя
+    NType energyRegularization; //Энергия регуляризации слоя
+    NLayerDerivat typeDerivat; //Тип аргумента производной
 public:
     void setKoef(NType koef);
     NType getKoef();
@@ -35,14 +36,18 @@ public:
     NType getEnergyRegularization();
     NLayerDerivat getTypeDerivat();
 public:
-    virtual void init(NType value);
-    virtual void init(int lenRow, int lenColumn, NType value);
-    virtual void ginit(NType value);
-    virtual void ginit(int lenRow, int lenColumn, NType value);
-    virtual NType activation(NType& x) = 0;
-    virtual NType derivative(NType& y) = 0;
-    virtual NArray<NType>* run(NArray<NType>* X);
-    virtual NType funcRegularization();
+    virtual void deinit(); //Деинициализация
+    virtual void init(NType value); //Инициализация значением
+    virtual void init(int lenRow, int lenColumn, NType value); //Инициализация значением
+    virtual void ginit(NType value); //Инициализация Нгуен-Видроу
+    virtual void ginit(int lenRow, int lenColumn, NType value); //Инициализация Нгуен-Видроу
+    virtual NType activation(NType& x) = 0; //Функция активации нейрона
+    virtual NType derivative(NType& y) = 0; //Производная функции активации
+    virtual NArray<NType>* run(NArray<NType>* X); //Функционирование слоя
+    virtual NType funcRegularization(); //Функция регуляризации слоя
+public:
+    virtual void saveECSV(DataECSV& dt, string& parent);
+    virtual void loadECSV(DataECSV& dt, string& parent);
 };
 
 
@@ -84,6 +89,7 @@ INLayer<NType>& INLayer<NType>::operator=(INLayer<NType>& obj)
 template <typename NType>
 INLayer<NType>::~INLayer()
 {
+    this->deinit();
 }
 
 template <typename NType>
@@ -114,6 +120,15 @@ template <typename NType>
 NLayerDerivat INLayer<NType>::getTypeDerivat()
 {
     return this->typeDerivat;
+}
+
+template <typename NType>
+void INLayer<NType>::deinit()
+{
+    this->weigth.clear();
+    this->bias.clear();
+    this->output.clear();
+    this->sum.clear();
 }
 
 template <typename NType>
@@ -206,6 +221,68 @@ NType INLayer<NType>::funcRegularization()
 
     this->energyRegularization *= 0.5;
     return this->energyRegularization;
+}
+
+template <typename NType>
+void INLayer<NType>::saveECSV(DataECSV& dt, string& parent)
+{
+    NMatrix<string> str_mtrx;
+    vector<string> str_vec;
+    string str_val;
+    //string field;
+
+    to_matrix_string(str_mtrx, this->weigth); dt.addElement(parent, "weigth", str_mtrx, typeid(NType).name());
+
+    to_array_string(str_vec, this->bias); dt.addElement(parent, "bias", str_vec, typeid(NType).name());
+    to_array_string(str_vec, this->output); dt.addElement(parent, "output", str_vec, typeid(NType).name());
+    to_array_string(str_vec, this->sum); dt.addElement(parent, "sum", str_vec, typeid(NType).name());
+
+    str_val = to_string(this->koef); dt.addElement(parent, "koef", str_val, typeid(NType).name());
+    str_val = to_string(this->energyRegularization); dt.addElement(parent, "energyRegularization", str_val, typeid(NType).name());
+    str_val = to_string((unsigned int)this->type); dt.addElement(parent, "type", str_val, typeid(int).name());
+    str_val = to_string((unsigned int)this->typeDerivat); dt.addElement(parent, "typeDerivat", str_val, typeid(int).name());
+}
+
+template <typename NType>
+void INLayer<NType>::loadECSV(DataECSV& dt, string& parent)
+{
+    StructECSV* iter;
+    unsigned int enm;
+    NMatrix<string> str_mtrx;
+    vector<string> str_vec;
+    string str_val;
+    //string field;
+    bool* isLoad = newbool(8, false);
+
+    INLayer<NType>::deinit();
+
+    if(dt.isOneMatrix())
+    {
+        iter = dt.modules[0];
+        to_matrix_value(this->weigth, iter->mtrx);
+    }
+    else
+    {
+        size_t ind = dt.getShift();
+        while(!booland(isLoad, 8) && ind < dt.modules.size())
+        {
+            iter = dt.modules[ind];
+
+            if(iter->getFieldValue(parent, "weigth", str_mtrx)) {to_matrix_value(this->weigth, str_mtrx); isLoad[0] = true;}
+
+            if(iter->getFieldValue(parent, "bias", str_vec)) {to_array_value(this->bias, str_vec); isLoad[1] = true;}
+            if(iter->getFieldValue(parent, "output", str_vec)) {to_array_value(this->output, str_vec); isLoad[2] = true;}
+            if(iter->getFieldValue(parent, "sum", str_vec)) {to_array_value(this->sum, str_vec); isLoad[3] = true;}
+
+            if(iter->getFieldValue(parent, "koef", str_val)) {to_value(this->koef, str_val); isLoad[4] = true;}
+            if(iter->getFieldValue(parent, "energyRegularization", str_val)) {to_value(this->energyRegularization, str_val); isLoad[5] = true;}
+            if(iter->getFieldValue(parent, "type", str_val)) {to_value(enm, str_val); this->type = (NLayerType)enm; isLoad[6] = true;}
+            if(iter->getFieldValue(parent, "typeDerivat", str_val)) {to_value(enm, str_val); this->typeDerivat = (NLayerDerivat)enm; isLoad[7] = true;}
+
+            ind++;
+        }
+        dt.setShift(ind);
+    }
 }
 
 #endif // INLAYER_H

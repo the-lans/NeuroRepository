@@ -1,0 +1,39 @@
+$.speedLearning = 0.020000
+$Type = d
+
+$.speedRegularization = 0.020000
+$Type = d
+
+$.inertia = 0.100000
+$Type = d
+
+$.maxEpoches = 100000
+$Type = i
+
+$.minError = 0.000250
+$Type = d
+
+$.minErrorChange = 0.000000
+$Type = d
+
+$.epoches = 79
+$Type = i
+
+$.stabEnergy = 1
+$Type = i
+
+$.changeEnergy = 0.000015
+$Type = d
+
+$.stepReg = 10
+$Type = i
+
+$.energyAver
+$Type = d
+$Size = 7
+0.015738; 0.008902; 0.004954; 0.002726; 0.001485; 0.000802; 0.000429
+
+$.energyMax
+$Type = d
+$Size = 7
+0.015738; 0.008902; 0.004954; 0.002726; 0.001485; 0.000802; 0.000429

@@ -4,12 +4,11 @@
 #include "ineuronet.h"
 
 template <typename NType>
-class NAprox: public INeuroNet<NType>
+class NAprox: public NExamples<NType>
 {
 public:
     NAprox();
     NAprox(NAprox<NType>& obj);
-    NAprox(int size);
 public:
     virtual void prerun(NMatrix<NType>& tab);
     virtual NArray<NType>* postrun();
@@ -18,19 +17,13 @@ public:
 
 template <typename NType>
 NAprox<NType>::NAprox():
-    INeuroNet<NType>()
+    NExamples<NType>()
 {
 }
 
 template <typename NType>
 NAprox<NType>::NAprox(NAprox<NType>& obj):
-    INeuroNet<NType>(obj)
-{
-}
-
-template <typename NType>
-NAprox<NType>::NAprox(int size):
-    INeuroNet<NType>(size)
+    NExamples<NType>(obj)
 {
 }
 
@@ -39,11 +32,13 @@ void NAprox<NType>::prerun(NMatrix<NType>& tab)
 {
     int ind;
     NType value;
+    NExample<NType>* pExam;
+
     this->emptyExamples();
 
     for(ind = 0; ind < tab.getLenRow(); ind++)
     {
-        NExample<NType>* pExam = new NExample<NType>();
+        pExam = new NExample<NType>();
 
         value = tab[ind][0];
         pExam->input.push(value);

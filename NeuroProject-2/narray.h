@@ -20,16 +20,24 @@ public:
     NType& operator[](size_t pos);
     const NType& operator[](size_t pos) const;
 protected:
-    int length;
-    int size;
-    int block;
-    NType* data;
+    int length; //Длина массива
+    int size; //Размерность массива (выделено памяти)
+    int block; //Размер блока, на который выделяется память
+    NType* data; //Данные
+public:
+    void setBlock(int block);
+    int getBlock();
+    int getLength();
+    void setSize(int size);
+    int getSize();
+    void setData(NType* dt);
+    NType* getData();
 public:
     typedef NType* iterator;
     typedef const NType* const_iterator;
-    NType& at(size_t pos);
-    NType& front();
-    NType& back();
+    NType& at(size_t pos); //Возврат элемента с проверкой
+    NType& front(); //Первый элемент
+    NType& back(); //Последний элемент
     NArray<NType>::iterator begin() {return this->data;}
     NArray<NType>::iterator end() {return (this->data + this->length);}
     NArray<NType>::const_iterator cbegin() const {return this->data;}
@@ -38,27 +46,31 @@ public:
     NArray<NType>::iterator rend() {return this->data;}
     NArray<NType>::const_iterator crbegin() const {return (this->data + this->length - 1);}
     NArray<NType>::const_iterator crend() const {return this->data;}
-    bool empty();
-    void shrink_to_fit();
+    bool empty(); //Массив пустой?
+    void shrink_to_fit(); //Очистка неиспользуемой памяти
+    NArray<NType>::iterator insert(NArray<NType>::const_iterator pos, const NType& element); //Вставка элемента в позицию
+    NArray<NType>::iterator insert(NArray<NType>::const_iterator pos, size_t count, const NType& element); //Вставка элемента в позицию
+    NArray<NType>::iterator erase(NArray<NType>::const_iterator pos); //Удаление элемента из позиции
+    void swap(NArray<NType>& other); //Обмен элементами между массивами
 public:
-    void init(int length);
-    void init(int length, NType value);
-    void clear();
-    void add(const NType& element, int pos);
-    NType del(int pos);
-    void push(const NType& element);
-    NType pop();
-    void set(const NType& element, int pos);
-    NType get(int pos);
-    void setBlock(int block);
-    int getBlock();
-    int getLength();
-    int getSize();
-    void resize(int size);
-    void renew(int size);
-    NType* getData();
-    void dataCopy(NType* src);
-    void dataCopy(NType* dst, NType* src);
+    void init(int length); //Инициализация
+    void init(int length, NType value); //Инициализация значением
+    void clear(); //Очистка массива
+    void add(const NType& element, int pos, int count); //Вставка элемента в позицию
+    void add(const NType& element, int pos); //Вставка элемента в позицию
+    NType del(int pos); //Удаление элемента из позиции
+    void push(const NType& element); //Вставка элемента в конец
+    NType pop(); //Извлечение элемента с конца
+    void set(const NType& element, int pos); //Установка значения элемента
+    NType get(int pos); //Возврат элемента
+    void resize(int size); //Изменение размерности массива
+    void renew(int size); //Перевыделение памяти (все данные стираются)
+    void memCopy(NType* src); //Копирование данных массива
+    void memCopy(NType* dst, NType* src); //Копирование данных массива
+    void dataCopy(NType* src); //Поэлементное копирование
+    void dataCopy(NType* dst, NType* src); //Поэлементное копирование
+    void convertUInt(NArray<unsigned int>& dest); //Конвертация массива uint в элементы массива
+    NArray<unsigned int>& toUInt(NArray<unsigned int>& dest); //Конвертация элементов массива в uint
 public:
     NArray<NType>& valsum(NType& B);
     NArray<NType>& sum(NArray<NType>& B);
@@ -155,6 +167,49 @@ const NType& NArray<NType>::operator[](size_t pos) const
 
 
 template <typename NType>
+void NArray<NType>::setBlock(int block)
+{
+    this->block = block;
+}
+
+template <typename NType>
+int NArray<NType>::getLength()
+{
+    return this->length;
+}
+
+template <typename NType>
+void NArray<NType>::setSize(int size)
+{
+    this->size = size;
+}
+
+template <typename NType>
+int NArray<NType>::getSize()
+{
+    return this->size;
+}
+
+template <typename NType>
+int NArray<NType>::getBlock()
+{
+    return this->block;
+}
+
+template <typename NType>
+void NArray<NType>::setData(NType* dt)
+{
+    this->data = dt;
+}
+
+template <typename NType>
+NType* NArray<NType>::getData()
+{
+    return this->data;
+}
+
+
+template <typename NType>
 NType& NArray<NType>::at(size_t pos)
 {
     if(pos >= this->length) {throw std::out_of_range("NArray<NType>::at() : index is out of range");}
@@ -183,6 +238,72 @@ template <typename NType>
 void NArray<NType>::shrink_to_fit()
 {
     this->resize(this->length);
+}
+
+template <typename NType>
+typename NArray<NType>::iterator NArray<NType>::insert(NArray<NType>::const_iterator pos, const NType& element)
+{
+    if(this->length >= this->size)
+    {
+        this->resize(this->size + this->block);
+    }
+
+    for(NArray<NType>::iterator iter = this->end(); iter != pos; iter--)
+    {
+        *iter = *(iter-1);
+    }
+    *pos = element;
+    this->length++;
+    return pos;
+}
+
+template <typename NType>
+typename NArray<NType>::iterator NArray<NType>::insert(NArray<NType>::const_iterator pos, size_t count, const NType& element)
+{
+    if(this->length > this->size + count)
+    {
+        this->resize(this->size + (int(count/this->block) + 1) * this->block);
+    }
+
+    for(NArray<NType>::iterator iter = this->end() + count - 1; iter != pos + count - 1; iter--)
+    {
+        *iter = *(iter-count);
+    }
+    for(NArray<NType>::iterator iter = pos; iter != pos + count; iter++)
+    {
+        *iter = element;
+    }
+    this->length += count;
+    return pos;
+}
+
+template <typename NType>
+typename NArray<NType>::iterator NArray<NType>::erase(NArray<NType>::const_iterator pos)
+{
+    this->length--;
+    for(NArray<NType>::iterator iter = pos; iter != this->end(); iter++)
+    {
+        *iter = *(iter+1);
+    }
+    return pos;
+}
+
+template <typename NType>
+void NArray<NType>::swap(NArray<NType>& other)
+{
+    NType* tmpdt = other.getData();
+    other.setData(this->data);
+    this->data = tmpdt;
+
+    int tmpBlock = other.getBlock();
+    int tmpSize = other.getSize();
+    int tmpLen = other.getLength();
+    other.setBlock(this->block);
+    other.setSize(this->size);
+    other.init(this->length);
+    this->block = tmpBlock;
+    this->size = tmpSize;
+    this->length = tmpLen;
 }
 
 
@@ -217,6 +338,25 @@ template <typename NType>
 void NArray<NType>::clear()
 {
     this->length = 0;
+}
+
+template <typename NType>
+void NArray<NType>::add(const NType& element, int pos, int count)
+{
+    if(this->length > this->size + count)
+    {
+        this->resize(this->size + (int(count/this->block) + 1) * this->block);
+    }
+
+    for(int i = this->length + count - 1; i > pos + count - 1; i--)
+    {
+        this->data[i] = this->data[i-count];
+    }
+    for(int i = pos; i < pos + count; i++)
+    {
+        this->data[i] = element;
+    }
+    this->length += count;
 }
 
 template <typename NType>
@@ -279,30 +419,6 @@ NType NArray<NType>::get(int pos)
 }
 
 template <typename NType>
-void NArray<NType>::setBlock(int block)
-{
-    this->block = block;
-}
-
-template <typename NType>
-int NArray<NType>::getLength()
-{
-    return this->length;
-}
-
-template <typename NType>
-int NArray<NType>::getSize()
-{
-    return this->size;
-}
-
-template <typename NType>
-int NArray<NType>::getBlock()
-{
-    return this->block;
-}
-
-template <typename NType>
 void NArray<NType>::resize(int size)
 {
     size = size > this->length ? size : this->length;
@@ -328,29 +444,54 @@ void NArray<NType>::renew(int size)
 }
 
 template <typename NType>
-NType* NArray<NType>::getData()
+void NArray<NType>::memCopy(NType* src)
 {
-    return this->data;
+    memcpy(this->data, src, this->length * sizeof(NType));
+}
+
+template <typename NType>
+void NArray<NType>::memCopy(NType* dst, NType* src)
+{
+    memcpy(dst, src, this->length * sizeof(NType));
 }
 
 template <typename NType>
 void NArray<NType>::dataCopy(NType* src)
 {
-    memcpy(this->data, src, this->length * sizeof(NType));
-    /*for(int i = 0; i < this->length; i++)
+    for(int i = 0; i < this->length; i++)
     {
-        this->data[i] = src[i];
-    }*/
+        data[i] = src[i];
+    }
 }
 
 template <typename NType>
 void NArray<NType>::dataCopy(NType* dst, NType* src)
 {
-    memcpy(dst, src, this->length * sizeof(NType));
-    /*for(int i = 0; i < this->length; i++)
+    for(int i = 0; i < this->length; i++)
     {
         dst[i] = src[i];
-    }*/
+    }
+}
+
+template <typename NType>
+void NArray<NType>::convertUInt(NArray<unsigned int>& dest)
+{
+    this->clear();
+    for(int i = 0; i < this->length; i++)
+    {
+        this->push((NType)dest[i]);
+    }
+}
+
+template <typename NType>
+NArray<unsigned int>& NArray<NType>::toUInt(NArray<unsigned int>& dest)
+{
+    dest.clear();
+    for(int i = 0; i < this->length; i++)
+    {
+        dest.push((unsigned int)this->data[i]);
+    }
+    return dest;
 }
 
 
@@ -405,7 +546,7 @@ NArray<NType>& NArray<NType>::mul(NMatrix<NType>& B, bool orient)
     if(data != nullptr)
     {
         datacpy = new NType[this->length];
-        this->dataCopy(datacpy, this->data);
+        this->memCopy(datacpy, this->data);
     }
 
     int i, j, k;
@@ -445,6 +586,10 @@ NArray<NType>& NArray<NType>::mul(NMatrix<NType>& B, bool orient)
             }
             data[i] = value;
         }
+    }
+    else
+    {
+        throw "NArray: size is not mul!";
     }
     return (*this);
 }
@@ -514,6 +659,10 @@ NArray<NType>& NArray<NType>::mul(NArray<NType>& A, NMatrix<NType>& B, bool orie
             }
             data[i] = value;
         }
+    }
+    else
+    {
+        throw "NArray: size is not mul!";
     }
     return (*this);
 }

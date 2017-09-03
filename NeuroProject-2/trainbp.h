@@ -2,42 +2,43 @@
 #define TRAINBP_H
 
 #include "ineuronet.h"
+#include "iobjectecsv.h"
 
 template <typename NType>
-class TrainBP
+class TrainBP: public IObjectECSV
 {
 public:
     TrainBP();
     ~TrainBP();
 public:
-    INeuroNet<NType>* net;
-    INeuroNet<NType>* changeNet;
-    NArray< NArray<NType>* > errorNet;
-    NArray<NType> backOut;
-    NArray<NType> energyAver;
-    NArray<NType> energyMax;
+    INeuroNet<NType>* net; //Обучаемая нейронная сеть
+    INeuroNet<NType>* changeNet; //Копия нейросети для изменений весов
+    NArray< NArray<NType>* > errorNet; //Ошибки слоёв
+    NArray<NType> energyAver; //Обучение: средняя ошибка обучения
+    NArray<NType> energyMax; //Обучение: максимальная ошибка обучения
 protected:
-    NType speedLearning;
-    NType speedRegularization;
-    NType inertia;
-    int maxEpoches;
-    NType minError;
-    NType minErrorChange;
-    int epoches;
-    int stabEnergy;
-    NType changeEnergy;
-    int stepReg;
+    NType speedLearning; //Обучение: скорость обучения
+    NType speedRegularization; //Обучение: скорость регуляризации
+    NType inertia; //Обучение: инерция
+    int maxEpoches; //Обучение: максимальное количество эпох
+    NType minError; //Обучение: минимальная ошибка
+    NType minErrorChange; //Обучение: минимальное изменение энергии
+    int epoches; //Обучение: Количество эпох
+    int stabEnergy; //Обучение: количество стабилизаций энергии
+    NType changeEnergy; //Обучение: изменение энергии
+    int stepReg; //Обучение: шаг сохранения энергии
 private:
+    NArray<NType> backOut; //Производная целевой функции или вектор, рассчитанный по дельта-правилу
     NMatrix<NType> changeWeight1, changeWeight2;
     NArray<NType> changeBias1, changeBias2;
-    NType koefTrain;
-    NType koefRegular;
+    NType koefTrain; //Коэффициент обучения, агрегирующий другие коэффициенты
+    NType koefRegular; //Коэффициент регуляризации
     INLayer<NType>** pLay; //net.lay
-    NExample<NType>** pExam; //net.exam
+    NExample<NType>** pExam; //net.examples
     NArray<NType>** pMas; //errorNet
     INLayer<NType>** pChangeLay; //changeNet.lay
     NType* pOutrun; //exm.outrun
-    int lenLay; //net.lay
+    int lenLay; //net.lay - Количество слоёв
 public:
     void setSpeedLearning(NType param);
     void setSpeedRegularization(NType param);
@@ -54,12 +55,15 @@ public:
     NType getChangeEnergy();
     int getStepReg();
 public:
-    virtual void init();
-    virtual void deinit();
-    virtual void train();
-    virtual void calculateError(NExample<NType>* exm);
-    virtual void change(NExample<NType>* exm);
-    virtual void update();
+    virtual void init(); //Инициализация
+    virtual void deinit(); //Деинициализация
+    virtual void train(); //Процесс обучения
+    virtual void calculateError(NExample<NType>* exm); //Расчёт ошибок обучения
+    virtual void change(NExample<NType>* exm); //Расчёт изменений весов
+    virtual void update(); //Принятие изменений
+public:
+    virtual void saveECSV(DataECSV& dt, string& parent);
+    virtual void loadECSV(DataECSV& dt, string& parent);
 };
 
 
@@ -76,6 +80,7 @@ TrainBP<NType>::TrainBP()
     this->minErrorChange = 0;
     this->epoches = 0;
     this->changeEnergy = 0;
+    this->stabEnergy = 0;
     this->stepReg = 0;
 }
 
@@ -175,6 +180,7 @@ template <typename NType>
 void TrainBP<NType>::init()
 {
     this->deinit();
+
     this->changeEnergy = 0;
     this->epoches = 0;
     this->stabEnergy = 0;
@@ -211,7 +217,8 @@ void TrainBP<NType>::deinit()
     }
 
     NArray<NType>* mas;
-    for(int i = 0; i < this->errorNet.getLength(); i++)
+    int len = this->errorNet.getLength();
+    for(int i = 0; i < len; i++)
     {
         mas = this->errorNet.pop();
         delete mas;
@@ -225,20 +232,19 @@ void TrainBP<NType>::train()
     NExample<NType>* exm;
     NType prevEnrg, curEnrg;
 
-    int beginset = this->net->getBeginset();
-    int testset = this->net->getTestset();
+    int beginset = this->net->examples->getBeginset();
+    int testset = this->net->examples->getTestset();
     this->koefTrain = this->speedLearning * (1 - this->inertia);
     this->koefRegular = - (this->speedLearning * this->speedRegularization) / (testset - beginset);
     this->pLay = this->net->lay.getData();
-    this->pExam = this->net->exam.getData();
+    this->pExam = this->net->examples->getData();
     this->pMas = this->errorNet.getData();
     this->pChangeLay = this->changeNet->lay.getData();
     this->lenLay = this->net->lay.getLength();
 
     this->net->runExamples(NSetType::NSetTrain);
-    //this->net->runEnergy(NSetType::NSetTrain);
-    prevEnrg = this->net->getEnergyAver();
-    curEnrg = this->net->getEnergyAver();
+    prevEnrg = this->net->examples->getEnergyAver();
+    curEnrg = this->net->examples->getEnergyAver();
     this->changeEnergy = prevEnrg;
 
     while(this->epoches < this->maxEpoches
@@ -258,9 +264,8 @@ void TrainBP<NType>::train()
                 update();
             }
             this->epoches++;
-            //this->net->runExamples(NSetType::NSetTrain);
             this->net->runEnergy(NSetType::NSetTrain);
-            curEnrg = this->net->getEnergyAver();
+            curEnrg = this->net->examples->getEnergyAver();
             this->changeEnergy = prevEnrg - curEnrg;
             if(this->changeEnergy < 0) {this->changeEnergy = -this->changeEnergy;}
             prevEnrg = curEnrg;
@@ -268,13 +273,13 @@ void TrainBP<NType>::train()
             if((this->stepReg != 0)&&(this->epoches % this->stepReg == 0))
             {
                 this->energyAver.push(curEnrg);
-                this->energyMax.push(this->net->getEnergyMax());
+                this->energyMax.push(this->net->examples->getEnergyMax());
             }
         }
 
         this->stabEnergy++;
         this->net->runExamples(NSetType::NSetTrain);
-        curEnrg = this->net->getEnergyAver();
+        curEnrg = this->net->examples->getEnergyAver();
         this->changeEnergy = prevEnrg - curEnrg;
         if(this->changeEnergy < 0) {this->changeEnergy = -this->changeEnergy;}
         prevEnrg = curEnrg;
@@ -376,6 +381,72 @@ void TrainBP<NType>::update()
     {
         pLay[k]->weigth.sum(pChangeLay[k]->weigth);
         pLay[k]->bias.sum(pChangeLay[k]->bias);
+    }
+}
+
+template <typename NType>
+void TrainBP<NType>::saveECSV(DataECSV& dt, string& parent)
+{
+    //NMatrix<string> str_mtrx;
+    vector<string> str_vec;
+    string str_val;
+    //string field;
+
+    str_val = to_string(this->speedLearning); dt.addElement(parent, "speedLearning", str_val, typeid(NType).name());
+    str_val = to_string(this->speedRegularization); dt.addElement(parent, "speedRegularization", str_val, typeid(NType).name());
+    str_val = to_string(this->inertia); dt.addElement(parent, "inertia", str_val, typeid(NType).name());
+    str_val = to_string(this->maxEpoches); dt.addElement(parent, "maxEpoches", str_val, typeid(int).name());
+    str_val = to_string(this->minError); dt.addElement(parent, "minError", str_val, typeid(NType).name());
+    str_val = to_string(this->minErrorChange); dt.addElement(parent, "minErrorChange", str_val, typeid(NType).name());
+    str_val = to_string(this->epoches); dt.addElement(parent, "epoches", str_val, typeid(int).name());
+    str_val = to_string(this->stabEnergy); dt.addElement(parent, "stabEnergy", str_val, typeid(int).name());
+    str_val = to_string(this->changeEnergy); dt.addElement(parent, "changeEnergy", str_val, typeid(NType).name());
+    str_val = to_string(this->stepReg); dt.addElement(parent, "stepReg", str_val, typeid(int).name());
+
+    to_array_string(str_vec, this->energyAver); dt.addElement(parent, "energyAver", str_vec, typeid(NType).name());
+    to_array_string(str_vec, this->energyMax); dt.addElement(parent, "energyMax", str_vec, typeid(NType).name());
+}
+
+template <typename NType>
+void TrainBP<NType>::loadECSV(DataECSV& dt, string& parent)
+{
+    StructECSV* iter;
+    //unsigned int enm;
+    //NMatrix<string> str_mtrx;
+    vector<string> str_vec;
+    string str_val;
+    //string field;
+    bool* isLoad = newbool(12, false);
+
+    TrainBP<NType>::deinit();
+
+    if(dt.isOneMatrix())
+    {
+        iter = dt.modules[0];
+    }
+    else
+    {
+        size_t ind = dt.getShift();
+        while(!booland(isLoad, 12) && ind < dt.modules.size())
+        {
+            iter = dt.modules[ind];
+
+            if(iter->getFieldValue(parent, "speedLearning", str_val)) {to_value(this->speedLearning, str_val); isLoad[0] = true;}
+            if(iter->getFieldValue(parent, "speedRegularization", str_val)) {to_value(this->speedRegularization, str_val); isLoad[1] = true;}
+            if(iter->getFieldValue(parent, "inertia", str_val)) {to_value(this->inertia, str_val); isLoad[2] = true;}
+            if(iter->getFieldValue(parent, "maxEpoches", str_val)) {to_value(this->maxEpoches, str_val); isLoad[3] = true;}
+            if(iter->getFieldValue(parent, "minError", str_val)) {to_value(minError, str_val); isLoad[4] = true;}
+            if(iter->getFieldValue(parent, "minErrorChange", str_val)) {to_value(this->minErrorChange, str_val); isLoad[5] = true;}
+            if(iter->getFieldValue(parent, "epoches", str_val)) {to_value(this->epoches, str_val); isLoad[6] = true;}
+            if(iter->getFieldValue(parent, "stabEnergy", str_val)) {to_value(this->stabEnergy, str_val); isLoad[7] = true;}
+            if(iter->getFieldValue(parent, "changeEnergy", str_val)) {to_value(this->changeEnergy, str_val); isLoad[8] = true;}
+            if(iter->getFieldValue(parent, "stepReg", str_val)) {to_value(this->stepReg, str_val); isLoad[9] = true;}
+
+            if(iter->getFieldValue(parent, "energyAver", str_vec)) {to_array_value(this->energyAver, str_vec); isLoad[10] = true;}
+            if(iter->getFieldValue(parent, "energyMax", str_vec)) {to_array_value(this->energyMax, str_vec); isLoad[11] = true;}
+
+            ind++;
+        }
     }
 }
 

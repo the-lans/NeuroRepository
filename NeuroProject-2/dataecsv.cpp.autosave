@@ -1,0 +1,94 @@
+#include "dataecsv.h"
+
+//Разделение строки на подстроки по разделителю
+void split(vector<string>& dest, const string& str, const char* delim)
+{
+    char* pTempStr = strdup(str.c_str());
+    char* pWord = strtok(pTempStr, delim);
+
+    while(pWord != NULL)
+    {
+        dest.push_back(pWord);
+        pWord = strtok(NULL, delim);
+    }
+
+    free(pTempStr);
+}
+
+//Разделение строки на подстроки по разделителю с учётом символа экранирования
+void split_no_slash(vector<string>& dest, const string& str, const char* delim)
+{
+    char* pTempStr = strdup(str.c_str());
+    char* pWord = strtok(pTempStr, delim);
+
+    while(pWord != NULL)
+    {
+        dest.push_back(pWord);
+        pWord = strtok(NULL, delim);
+    }
+
+    free(pTempStr);
+}
+
+//Преобразование строки в элемент
+bool str_to_element(string& dest, const string& str)
+{
+    return false;
+}
+
+//Экранирование
+void shield(string& dest, const string& str)
+{
+    
+}
+
+void freeshield(string& dest, const string& str)
+{
+    
+}
+
+
+void DataECSV::read(string name)
+{
+    ifstream in_file(name); //Открываем файл для считывания информации
+    if(in_file.is_open())
+    {
+        string str;
+        while(getline(in_file, str))
+        {
+            cout << str << '\n';
+
+        }
+        in_file.close(); // Закрываем файл
+    }
+}
+
+/*void DataECSV::addElement(string parent, string field, double value, string type)
+{
+    string str = (string) value;
+    str.replace("\"", "\\\"");
+    str.replace("\\", "\\\\");
+    str.replace(";", "\\;");
+    StructECSV element;
+    element.mtrx.init(1, 1, 0);
+    element.path.push(parent);
+    element.path.push(field);
+    element.type.push(type);
+    element.mtrx.set(0, 0, str);
+    element.typeECSV.push(TypeDataECSV::Element);
+}
+
+void DataECSV::addString(string parent, string field, string value, string type)
+{
+    value.replace("\"", "\\\"");
+    value.replace("\\", "\\\\");
+    value.replace(";", "\\;");
+    string str ="\"" + value + "\"";
+    StructECSV element;
+    element.mtrx.init(1, 1, 0);
+    element.path.push(parent);
+    element.path.push(field);
+    element.type.push(type);
+    element.mtrx.set(0, 0, str);
+    element.typeECSV.push(TypeDataECSV::String);
+}*/

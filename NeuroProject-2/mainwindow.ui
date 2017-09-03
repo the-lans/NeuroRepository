@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>276</height>
+    <width>534</width>
+    <height>376</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -44,12 +44,35 @@
         <height>16777215</height>
        </size>
       </property>
+      <property name="tabStopWidth">
+       <number>80</number>
+      </property>
      </widget>
     </item>
     <item>
      <widget class="QPushButton" name="pushButton">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="layoutDirection">
+       <enum>Qt::LeftToRight</enum>
+      </property>
       <property name="text">
        <string>Выполнить</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pushButton_load">
+      <property name="text">
+       <string>Загрузить</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pushButton_save">
+      <property name="text">
+       <string>Сохранить</string>
       </property>
      </widget>
     </item>
@@ -60,8 +83,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>400</width>
-     <height>26</height>
+     <width>534</width>
+     <height>21</height>
     </rect>
    </property>
   </widget>
