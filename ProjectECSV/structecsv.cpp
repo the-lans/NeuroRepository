@@ -1,6 +1,11 @@
 #include "structecsv.h"
 
 
+StructECSV::StructECSV()
+{
+    this->group = false;
+}
+
 TypeDataECSV StructECSV::getTypeECSV(int ind)
 {
     int len = this->typeECSV.size();
@@ -81,19 +86,42 @@ string StructECSV::getPath()
     return str;
 }
 
-bool StructECSV::cmpPath(string& str)
+bool StructECSV::cmpPath(string& str, bool acc)
 {
     vector<string> subpath;
     split(subpath, str, ".");
-    return this->cmpPath(subpath);
+    if(subpath.size() > 0 && subpath[0] == "") {subpath.erase(subpath.begin());}
+    return this->cmpPath(subpath, acc);
 }
 
-bool StructECSV::cmpPath(vector<string>& subpath)
+bool StructECSV::cmpPath(vector<string>& subpath, bool acc)
 {
-    bool bl = true;
+    bool bl = (!acc || this->path.size() == subpath.size());
     for(size_t i = 0; bl == true && i < subpath.size(); i++)
     {
         if(subpath[i] != this->path[i]) {bl = false;}
+    }
+    return bl;
+}
+
+vector<string>& StructECSV::splitPath(string& str)
+{
+    this->path.clear();
+    split(this->path, str, ".");
+    if(this->path[0] == "") {this->path.erase(this->path.begin());}
+    return this->path;
+}
+
+bool StructECSV::isFieldObj(string& parent)
+{
+    bool bl = true;
+    if(parent != "")
+    {
+        vector<string> path_parent;
+        split(path_parent, parent, ".");
+        if(path_parent.size() > 0 && path_parent[0] == "") {path_parent.erase(path_parent.begin());}
+        bl = (this->path.size() > path_parent.size());
+        if(bl) {bl = this->cmpPath(path_parent, false);}
     }
     return bl;
 }
@@ -134,12 +162,21 @@ string StructECSV::getMatrixValue()
 
 vector<string>& StructECSV::getMatrixVector(vector<string>& value)
 {
-    this->mtrx.popRow(value);
+    //this->mtrx.popRow(value);
+    this->mtrx.getRow(0, value);
+    return value;
+}
+
+NArray<string>& StructECSV::getMatrixVector(NArray<string>& value)
+{
+    //this->mtrx.popRow(value);
+    this->mtrx.getRow(0, value);
     return value;
 }
 
 bool StructECSV::isField(string& parent, const string& field)
 {
+    if(parent[0] != '.') {parent = "" + parent;}
     return this->getPath() == (parent + "." + field);
 }
 
@@ -151,6 +188,13 @@ bool StructECSV::getFieldValue(string& parent, const string& field, NMatrix<stri
 }
 
 bool StructECSV::getFieldValue(string& parent, const string& field, vector<string>& value)
+{
+    bool bl = this->isField(parent, field);
+    if(bl) {this->getMatrixVector(value);}
+    return bl;
+}
+
+bool StructECSV::getFieldValue(string& parent, const string& field, NArray<string>& value)
 {
     bool bl = this->isField(parent, field);
     if(bl) {this->getMatrixVector(value);}

@@ -33,48 +33,144 @@ void shield(vector<string>& vecstr); //Экранирование
 void freeshield(string& dest, const string& str); //Преобразование экранированных символов
 void freeshield(vector<string>& vecstr); //Преобразование экранированных символов
 
-void to_matrix_string(NMatrix<string>& dest, NMatrix<double>& mtrx); //Преобразование матрицы значений в матрицу строк
-void to_matrix_string(NMatrix<string>& dest, NMatrix<float>& mtrx);
-void to_matrix_string(NMatrix<string>& dest, NMatrix<unsigned int>& mtrx);
-void to_matrix_string(NMatrix<string>& dest, NMatrix<signed int>& mtrx);
-void to_matrix_string(NMatrix<string>& dest, vector<double>& vec);
-void to_matrix_string(NMatrix<string>& dest, vector<float>& vec);
-void to_matrix_string(NMatrix<string>& dest, vector<unsigned int>& vec);
-void to_matrix_string(NMatrix<string>& dest, vector<signed int>& vec);
-
-void to_array_string(vector<string>& dest, vector<double>& vec); //Преобразование массива значений в массив строк
-void to_array_string(vector<string>& dest, vector<float>& vec);
-void to_array_string(vector<string>& dest, vector<unsigned int>& vec);
-void to_array_string(vector<string>& dest, vector<signed int>& vec);
-void to_array_string(vector<string>& dest, NArray<double>& vec);
-void to_array_string(vector<string>& dest, NArray<float>& vec);
-void to_array_string(vector<string>& dest, NArray<unsigned int>& vec);
-void to_array_string(vector<string>& dest, NArray<signed int>& vec);
-
-void to_matrix_value(NMatrix<double>& dest, NMatrix<string>& str_mtrx); //Преобразование матрицы строк в матрицу значений
-void to_matrix_value(NMatrix<float>& dest, NMatrix<string>& str_mtrx);
-void to_matrix_value(NMatrix<unsigned int>& dest, NMatrix<string>& str_mtrx);
-void to_matrix_value(NMatrix<signed int>& dest, NMatrix<string>& str_mtrx);
-void to_matrix_value(vector<double>& dest, NMatrix<string>& str_mtrx);
-void to_matrix_value(vector<float>& dest, NMatrix<string>& str_mtrx);
-void to_matrix_value(vector<unsigned int>& dest, NMatrix<string>& str_mtrx);
-void to_matrix_value(vector<signed int>& dest, NMatrix<string>& str_mtrx);
-
-void to_array_value(vector<double>& dest, vector<string>& str_vec); //Преобразование массива строк в массив значений
-void to_array_value(vector<float>& dest, vector<string>& str_vec);
-void to_array_value(vector<unsigned int>& dest, vector<string>& str_vec);
-void to_array_value(vector<signed int>& dest, vector<string>& str_vec);
-void to_array_value(NArray<double>& dest, vector<string>& str_vec);
-void to_array_value(NArray<float>& dest, vector<string>& str_vec);
-void to_array_value(NArray<unsigned int>& dest, vector<string>& str_vec);
-void to_array_value(NArray<signed int>& dest, vector<string>& str_vec);
-
 void to_value(double& value, string& str_val); //Преобразование строки в значение
 void to_value(float& value, string& str_val);
 void to_value(signed int& value, string& str_val);
 void to_value(unsigned int& value, string& str_val);
 void to_value(long& value, string& str_val);
+void to_value(bool& value, string str_val);
 
+string to_vstring(bool& value); //Преобразование значения в строку
+
+//Преобразование матрицы значений в матрицу строк
+template <typename NType>
+void to_matrix_string(NMatrix<string>& dest, NMatrix<NType>& mtrx)
+{
+    int ind, jnd;
+    int lenRow = mtrx.getLenRow();
+    int lenColumn = mtrx.getLenColumn();
+
+    dest.init(lenRow, lenColumn);
+    for(ind = 0; ind < lenRow; ind++)
+    {
+        for(jnd = 0; jnd < lenColumn; jnd++)
+        {
+            dest[ind][jnd] = to_string(mtrx[ind][jnd]);
+        }
+    }
+}
+
+template <typename NType>
+void to_matrix_string(NMatrix<string>& dest, vector<NType>& vec)
+{
+    int jnd;
+    int lenColumn = vec.size();
+
+    dest.init(1, lenColumn);
+    for(jnd = 0; jnd < lenColumn; jnd++)
+    {
+        dest[0][jnd] = to_string(vec[jnd]);
+    }
+}
+
+//Преобразование массива значений в массив строк
+template <typename NType>
+void to_array_string(vector<string>& dest, vector<NType>& vec)
+{
+    dest.clear();
+    for(size_t ind = 0; ind < vec.size(); ind++)
+    {
+        dest.push_back(to_string(vec[ind]));
+    }
+}
+
+template <typename NType>
+void to_array_string(vector<string>& dest, NArray<NType>& vec)
+{
+    dest.clear();
+    for(int ind = 0; ind < vec.getLength(); ind++)
+    {
+        dest.push_back(to_string(vec[ind]));
+    }
+}
+
+template <typename NType>
+void to_array_vstring(vector<string>& dest, vector<NType>& vec)
+{
+    dest.clear();
+    for(size_t ind = 0; ind < vec.size(); ind++)
+    {
+        dest.push_back(to_vstring(vec[ind]));
+    }
+}
+
+template <typename NType>
+void to_array_vstring(vector<string>& dest, NArray<NType>& vec)
+{
+    dest.clear();
+    for(int ind = 0; ind < vec.getLength(); ind++)
+    {
+        dest.push_back(to_vstring(vec[ind]));
+    }
+}
+
+//Преобразование матрицы строк в матрицу значений
+template <typename NType>
+void to_matrix_value(NMatrix<NType>& dest, NMatrix<string>& str_mtrx)
+{
+    int ind, jnd;
+    int lenRow = str_mtrx.getLenRow();
+    int lenColumn = str_mtrx.getLenColumn();
+
+    dest.init(lenRow, lenColumn);
+    for(ind = 0; ind < lenRow; ind++)
+    {
+        for(jnd = 0; jnd < lenColumn; jnd++)
+        {
+            to_value(dest[ind][jnd], str_mtrx[ind][jnd]);
+        }
+    }
+}
+
+template <typename NType>
+void to_matrix_value(vector<NType>& dest, NMatrix<string>& str_mtrx)
+{
+    int jnd;
+    NType val;
+    int lenColumn = str_mtrx.getLenColumn();
+
+    dest.clear();
+    for(jnd = 0; jnd < lenColumn; jnd++)
+    {
+        to_value(val, str_mtrx[0][jnd]);
+        dest.push_back(val);
+    }
+}
+
+//Преобразование массива строк в массив значений
+template <typename NType>
+void to_array_value(vector<NType>& dest, vector<string>& str_vec)
+{
+    NType val;
+    dest.clear();
+    for(size_t ind = 0; ind < str_vec.size(); ind++)
+    {
+        to_value(val, str_vec[ind]);
+        dest.push_back(val);
+    }
+}
+
+template <typename NType>
+void to_array_value(NArray<NType>& dest, vector<string>& str_vec)
+{
+    NType val;
+    dest.clear();
+    for(size_t ind = 0; ind < str_vec.size(); ind++)
+    {
+        to_value(val, str_vec[ind]);
+        dest.push(val);
+    }
+}
 
 template <typename NType>
 void toUInt(vector<unsigned int>& enm_arr, vector<NType>& vec)

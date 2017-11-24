@@ -4,6 +4,8 @@
 #include "nmatrix.h"
 #include <mem.h>
 #include <stdexcept>
+#include <cstdlib>
+#include <ctime>
 
 template <typename NType> class NMatrix;
 
@@ -24,14 +26,21 @@ protected:
     int size; //Размерность массива (выделено памяти)
     int block; //Размер блока, на который выделяется память
     NType* data; //Данные
+    bool lock; //Запрет на изменение размерности массива
+    bool extrn; //В массиве внешние данные
 public:
     void setBlock(int block);
     int getBlock();
+    void setLength(int len);
     int getLength();
     void setSize(int size);
     int getSize();
     void setData(NType* dt);
     NType* getData();
+    void setLock(bool bl);
+    bool getLock();
+    void setExtrn(bool bl);
+    bool getExtrn();
 public:
     typedef NType* iterator;
     typedef const NType* const_iterator;
@@ -52,9 +61,18 @@ public:
     NArray<NType>::iterator insert(NArray<NType>::const_iterator pos, size_t count, const NType& element); //Вставка элемента в позицию
     NArray<NType>::iterator erase(NArray<NType>::const_iterator pos); //Удаление элемента из позиции
     void swap(NArray<NType>& other); //Обмен элементами между массивами
+    void swap(int ind, int jnd); //Поменять элементы местами
+    static void srand(); //Инициализация генератора
+    static int random_index(int beg, int end);
+    int random_index(); //Случайный индекс элемента
+    void mix(); //Перемешивание массива
+    void mix(int beg, int end);
 public:
+    void copyValue(NArray<NType>& obj); //Копирование значений
+    void destruct(); //Деструктор
     void init(int length); //Инициализация
     void init(int length, NType value); //Инициализация значением
+    void init_value(NType value); //Инициализация значением
     void clear(); //Очистка массива
     void add(const NType& element, int pos, int count); //Вставка элемента в позицию
     void add(const NType& element, int pos); //Вставка элемента в позицию
@@ -64,14 +82,20 @@ public:
     void set(const NType& element, int pos); //Установка значения элемента
     NType get(int pos); //Возврат элемента
     void resize(int size); //Изменение размерности массива
+    void renew(); //Перевыделение памяти (все данные стираются)
     void renew(int size); //Перевыделение памяти (все данные стираются)
+    void copyFields(NArray<NType>& obj); //Копирование полей
     void memCopy(NType* src); //Копирование данных массива
     void memCopy(NType* dst, NType* src); //Копирование данных массива
     void dataCopy(NType* src); //Поэлементное копирование
     void dataCopy(NType* dst, NType* src); //Поэлементное копирование
     void convertUInt(NArray<unsigned int>& dest); //Конвертация массива uint в элементы массива
     NArray<unsigned int>& toUInt(NArray<unsigned int>& dest); //Конвертация элементов массива в uint
+    NType& endElement(); //Последний элемент
+    void doMask(bool* mask); //Обнуление элементов по маске
 public:
+    NType sumElements();
+    NType sumElements(int sift);
     NArray<NType>& valsum(NType& B);
     NArray<NType>& sum(NArray<NType>& B);
     NArray<NType>& sum(NArray<NType>& A, NArray<NType>& B);
@@ -91,40 +115,39 @@ NArray<NType>::NArray()
     this->length = 0;
     this->size = 0;
     this->block = 1;
+    this->lock = false;
+    this->extrn = false;
 }
 
 template <typename NType>
 NArray<NType>::NArray(NArray<NType> &obj)
 {
-    this->data = new NType[obj.getSize()];
     this->length = obj.getLength();
     this->size = obj.getSize();
     this->block = obj.getBlock();
+    this->extrn = false;
+
+    this->data = new NType[this->size];
 
     NType* p = obj.getData();
-    if(p != nullptr)
-    {
-        this->dataCopy(p);
-    }
+    if(p != nullptr) {this->dataCopy(p);}
+    //this->lock = obj.getLock();
 }
 
 template <typename NType>
 NArray<NType>& NArray<NType>::operator=(NArray<NType>& obj)
 {
-    int len = obj.getLength();
+    this->length = obj.getLength();
     this->block = obj.getBlock();
+    //this->extrn = false;
 
-    if(len > this->size)
+    if(this->length > this->size)
     {
-        this->renew(len + this->block);
+        this->renew(this->length + this->block);
     }
-    this->length = len;
-
     NType* p = obj.getData();
-    if(p != nullptr)
-    {
-        this->dataCopy(p);
-    }
+    if(p != nullptr) {this->dataCopy(p);}
+    //this->lock = obj.getLock();
 
     return *this;
 }
@@ -136,6 +159,8 @@ NArray<NType>::NArray(int size)
     this->length = 0;
     this->size = size;
     this->block = 1;
+    this->lock = false;
+    this->extrn = false;
 }
 
 template <typename NType>
@@ -145,12 +170,14 @@ NArray<NType>::NArray(int size, int length, int block)
     this->length = length;
     this->size = size;
     this->block = block;
+    this->lock = false;
+    this->extrn = false;
 }
 
 template <typename NType>
 NArray<NType>::~NArray()
 {
-    if(this->data != nullptr) {delete[] this->data;}
+    this->destruct();
 }
 
 template <typename NType>
@@ -170,6 +197,12 @@ template <typename NType>
 void NArray<NType>::setBlock(int block)
 {
     this->block = block;
+}
+
+template <typename NType>
+void NArray<NType>::setLength(int len)
+{
+    this->length = len;
 }
 
 template <typename NType>
@@ -208,11 +241,35 @@ NType* NArray<NType>::getData()
     return this->data;
 }
 
+template <typename NType>
+void NArray<NType>::setLock(bool bl)
+{
+    this->lock = bl;
+}
+
+template <typename NType>
+bool NArray<NType>::getLock()
+{
+    return this->lock;
+}
+
+template <typename NType>
+void NArray<NType>::setExtrn(bool bl)
+{
+    this->extrn = bl;
+}
+
+template <typename NType>
+bool NArray<NType>::getExtrn()
+{
+    return this->extrn;
+}
+
 
 template <typename NType>
 NType& NArray<NType>::at(size_t pos)
 {
-    if(pos >= this->length) {throw std::out_of_range("NArray<NType>::at() : index is out of range");}
+    if(pos >= (size_t)this->length) {throw std::out_of_range("NArray<NType>::at() : index is out of range");}
     return this->data[pos];
 }
 
@@ -298,14 +355,101 @@ void NArray<NType>::swap(NArray<NType>& other)
     int tmpBlock = other.getBlock();
     int tmpSize = other.getSize();
     int tmpLen = other.getLength();
+    bool tmpLock = other.getLock();
+    bool tmpExtrn = other.getExtrn();
     other.setBlock(this->block);
     other.setSize(this->size);
+    other.setLock(this->lock);
+    other.setExtrn(this->extrn);
     other.init(this->length);
     this->block = tmpBlock;
     this->size = tmpSize;
     this->length = tmpLen;
+    this->lock = tmpLock;
+    this->extrn = tmpExtrn;
 }
 
+template <typename NType>
+void NArray<NType>::swap(int ind, int jnd)
+{
+    if(ind != jnd)
+    {
+        NType tmp = this->data[ind];
+        this->data[ind] = this->data[jnd];
+        this->data[jnd] = tmp;
+    }
+}
+
+template <typename NType>
+void NArray<NType>::srand()
+{
+    std::srand(unsigned(std::time(0)));
+}
+
+template <typename NType>
+int NArray<NType>::random_index(int beg, int end)
+{
+    return (beg + std::rand() % (end - beg));
+}
+
+template <typename NType>
+int NArray<NType>::random_index()
+{
+    return (std::rand() % this->length);
+}
+
+template <typename NType>
+void NArray<NType>::mix()
+{
+    int ind, jnd;
+    //NArray<NType>::srand();
+    for(int k = 0; k <= this->length / 2; k++)
+    {
+        ind = this->random_index();
+        jnd = this->random_index();
+        this->swap(ind, jnd);
+    }
+}
+
+template <typename NType>
+void NArray<NType>::mix(int beg, int end)
+{
+    int ind, jnd;
+    //NArray<NType>::srand();
+    for(int k = 0; k <= (end - beg)/2; k++)
+    {
+        ind = NArray<NType>::random_index(beg, end);
+        jnd = NArray<NType>::random_index(beg, end);
+        this->swap(ind, jnd);
+    }
+}
+
+
+template <typename NType>
+void NArray<NType>::copyValue(NArray<NType>& obj)
+{
+    this->length = obj.getLength();
+    this->block = obj.getBlock();
+    //this->extrn = false;
+
+    if(this->length > this->size)
+    {
+        this->renew(this->length + this->block);
+    }
+    NType* p = obj.getData();
+    if(p != nullptr) {this->memCopy(p);}
+    //this->lock = obj.getLock();
+}
+
+template <typename NType>
+void NArray<NType>::destruct()
+{
+    if(this->data != nullptr && !this->extrn)
+    {
+        delete[] this->data;
+        this->data = nullptr;
+    }
+}
 
 template <typename NType>
 void NArray<NType>::init(int length)
@@ -328,9 +472,15 @@ void NArray<NType>::init(int length, NType value)
     }
 
     this->length = length;
-    for(int i = 0; i < this->length; i++)
+    this->init_value(value);
+}
+
+template <typename NType>
+void NArray<NType>::init_value(NType value)
+{
+    for(int i = 0; i < length; i++)
     {
-        this->data[i] = value;
+        data[i] = value;
     }
 }
 
@@ -424,6 +574,7 @@ void NArray<NType>::resize(int size)
     size = size > this->length ? size : this->length;
     if(this->size != size)
     {
+        if(this->lock || this->extrn) {throw std::out_of_range("NArray<NType>::resize() : lock size");}
         NType* p = this->data;
         this->data = new NType[size];
         this->size = size;
@@ -436,11 +587,33 @@ void NArray<NType>::resize(int size)
 }
 
 template <typename NType>
+void NArray<NType>::renew()
+{
+    if(this->lock || this->extrn) {throw std::out_of_range("NArray<NType>::renew() : lock size");}
+    this->destruct();
+    this->data = new NType[this->size];
+}
+
+template <typename NType>
 void NArray<NType>::renew(int size)
 {
-    delete[] this->data;
+    if(this->lock || this->extrn) {throw std::out_of_range("NArray<NType>::renew() : lock size");}
+    this->destruct();
     this->data = new NType[size];
     this->size = size;
+}
+
+template <typename NType>
+void NArray<NType>::copyFields(NArray<NType>& obj)
+{
+    this->destruct();
+    this->data = obj.getData();
+    this->extrn = true;
+
+    this->length = obj.getLength();
+    this->size = obj.getSize();
+    this->block = obj.getBlock();
+    this->lock = obj.getLock();
 }
 
 template <typename NType>
@@ -458,7 +631,7 @@ void NArray<NType>::memCopy(NType* dst, NType* src)
 template <typename NType>
 void NArray<NType>::dataCopy(NType* src)
 {
-    for(int i = 0; i < this->length; i++)
+    for(int i = 0; i < length; i++)
     {
         data[i] = src[i];
     }
@@ -467,7 +640,7 @@ void NArray<NType>::dataCopy(NType* src)
 template <typename NType>
 void NArray<NType>::dataCopy(NType* dst, NType* src)
 {
-    for(int i = 0; i < this->length; i++)
+    for(int i = 0; i < length; i++)
     {
         dst[i] = src[i];
     }
@@ -477,7 +650,7 @@ template <typename NType>
 void NArray<NType>::convertUInt(NArray<unsigned int>& dest)
 {
     this->clear();
-    for(int i = 0; i < this->length; i++)
+    for(int i = 0; i < dest.getLength(); i++)
     {
         this->push((NType)dest[i]);
     }
@@ -494,6 +667,43 @@ NArray<unsigned int>& NArray<NType>::toUInt(NArray<unsigned int>& dest)
     return dest;
 }
 
+
+template <typename NType>
+NType& NArray<NType>::endElement()
+{
+    return *(this->data + this->length - 1);
+}
+
+template <typename NType>
+void NArray<NType>::doMask(bool* mask)
+{
+    for(int i = 0; i < length; i++)
+    {
+        if(mask[i]) {data[i] = 0;}
+    }
+}
+
+template <typename NType>
+NType NArray<NType>::sumElements()
+{
+    NType total = 0;
+    for(int i = 0; i < length; i++)
+    {
+        total += data[i];
+    }
+    return total;
+}
+
+template <typename NType>
+NType NArray<NType>::sumElements(int shift)
+{
+    NType total = 0;
+    for(int i = shift; i < length; i++)
+    {
+        total += data[i];
+    }
+    return total;
+}
 
 template <typename NType>
 NArray<NType>& NArray<NType>::valsum(NType& B)
@@ -545,8 +755,8 @@ NArray<NType>& NArray<NType>::mul(NMatrix<NType>& B, bool orient)
     NType* datacpy = nullptr;
     if(data != nullptr)
     {
-        datacpy = new NType[this->length];
-        this->memCopy(datacpy, this->data);
+        datacpy = new NType[length];
+        this->memCopy(datacpy, data);
     }
 
     int i, j, k;
@@ -591,6 +801,9 @@ NArray<NType>& NArray<NType>::mul(NMatrix<NType>& B, bool orient)
     {
         throw "NArray: size is not mul!";
     }
+
+    if(datacpy != nullptr) {delete[] datacpy;}
+
     return (*this);
 }
 

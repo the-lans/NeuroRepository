@@ -53,18 +53,25 @@ string& DataECSV::getSpec(string& str)
     return str;
 }
 
+bool DataECSV::getGroup(string& str)
+{
+    if(str[0] == '[' && str[str.length()-1] == ']')
+    {
+        str = str.substr(1, str.length()-2);
+        return true;
+    }
+    return false;
+}
+
 bool DataECSV::isDataPath(StructECSV* block)
 {
     return (block->mtrx.getLenRow() == 1 && !this->array_br)
             || (block->mtrx.getLenRow() == 1 && block->mtrx.getLenColumn() == 1);
 }
 
-vector<string>& DataECSV::splitPath(vector<string>& dest, string& str)
+bool DataECSV::isNextBlock(size_t ind, string& parent)
 {
-    dest.clear();
-    split(dest, str, ".");
-    if(dest[0] == "") {dest.erase(dest.begin());}
-    return dest;
+    return ind < this->modules.size() && this->modules[ind]->isFieldObj(parent);
 }
 
 StructECSV* DataECSV::addDataMatrix(StructECSV* block, string& str)
@@ -94,87 +101,25 @@ bool DataECSV::isOneMatrix()
     return this->modules.size() == 1 && this->modules[0]->path.size() == 0;
 }
 
+void DataECSV::seek_back(ifstream& sm, long skback)
+{
+    sm.seekg(skback, ios_base::beg);
+}
+
 bool DataECSV::read(string name)
 {
-    const char* c_delim_data = this->delim_data.c_str();
     this->clear();
-    ifstream in_file(name); //Открываем файл для считывания информации 
+    ifstream in_file; //Открываем файл для считывания информации
+    in_file.open(name, ios_base::in | ios_base::binary);
 
     if(in_file.is_open())
     {
-        string str, curs, class_curs;
-        //int r1, r2;
-        vector<string> spec, value_size;
-        StructECSV* block = nullptr;
+        in_file.seekg (0, ios_base::end);
+        long fsize = in_file.tellg();
+        in_file.seekg (0, ios_base::beg);
 
-        while(getline(in_file, str))
-        {
-            spec.clear();
-            value_size.clear();
-            delcomment(str);
-            trimstr(str);
-
-            if(this->isSpec(str)) //Специальная строка
-            {
-                split(spec, str, "=");
-                if(spec.size() > 2) {throw "Many signs \"=\"";}
-
-                //Идентификатор
-                class_curs = spec[0];
-                this->getSpec(class_curs);
-                trimstr(class_curs);
-                curs = class_curs;
-                str_to_lower(curs);
-
-                //Параметры
-                if(curs == "size")
-                {
-                    split(value_size, spec[1], c_delim_data);
-                    if(value_size.size() > 2 || value_size.size() == 0) {throw "Wrong size!";}
-                    //r1 = value_size[0];
-                    //r2 = (value_size.size() == 2, value_size[1], 1);
-                    //block->mtrx.init(0, r1);
-                }
-                else if(curs == "type")
-                {
-                    split(block->type, spec[1], c_delim_data);
-                    str_to_element(block->type);
-                }
-                else if(curs == "comment") {} //Комментарий
-                else if(curs == "class" && spec.size() == 2) //Путь к данным
-                {
-                    //Новый блок
-                    if(block != nullptr) {this->modules.push_back(block);}
-                    block = new StructECSV;
-
-                    class_curs = spec[1];
-                    trimstr(class_curs);
-                    this->splitPath(block->path, class_curs);
-                }
-                else if(spec.size() == 1 || spec.size() == 2) //Путь к данным
-                {
-                    //Новый блок
-                    if(block != nullptr) {this->modules.push_back(block);}
-                    block = new StructECSV;
-
-                    this->splitPath(block->path, class_curs);
-                    if(spec.size() == 2) //Данные
-                    {
-                        block = this->addDataMatrix(block, spec[1]);
-                    }
-                }
-                else
-                {
-                    throw "Wrong identy!";
-                }
-            }
-            else if(str != "") //Данные
-            {
-                block = this->addDataMatrix(block, str);
-            }
-        }
-
-        if(block != nullptr) {this->modules.push_back(block);}
+        this->readHead(in_file); //Шапка файла
+        this->readBody(in_file, fsize); //Чтение
         in_file.close(); // Закрываем файл
         return true;
     }
@@ -183,84 +128,364 @@ bool DataECSV::read(string name)
 
 bool DataECSV::write(string name)
 {
-    string delim_tmp = this->delim_data + " ";
-    ofstream out_file(name); //Открываем файл для записи
+    ofstream out_file; //Открываем файл для записи
+    out_file.open(name, ios_base::out | ios_base::binary);
 
     if(out_file.is_open())
     {
-        StructECSV* block;
-        string str;
-        bool blData;
-
-        out_file.write("", 0); //Очистка файла
-        for(size_t index = 0; index < this->modules.size(); index++)
-        {
-            block = this->modules[index];
-            blData = false;
-
-            //Путь к данным
-            if(block->path.size() >= 1)
-            {
-                str = "$" + block->getPath();
-                if(this->isDataPath(block)) //Данные
-                {
-                    block->getData(str, delim_tmp);
-                    blData = true;
-                    out_file << str;
-                }
-                else
-                {
-                    out_file << str << endl;
-                }
-            }
-
-            //Тип данных
-            if(block->path.size() > 0 && block->type.size() > 0)
-            {
-                block->getType(str, delim_tmp);
-                str = "$Type = " + str;
-                out_file << str << endl;
-            }
-
-            //Размер данных
-            if(block->path.size() > 0 && block->mtrx.getLenRow() > 1)
-            {
-                str = "$Size = ";
-                str += to_string(block->mtrx.getLenColumn());
-                str.append(delim_tmp);
-                str += to_string(block->mtrx.getLenRow());
-                out_file << str << endl;
-            }
-            else if(block->path.size() > 0 && block->mtrx.getLenColumn() > 1)
-            {
-                str = "$Size = ";
-                str += to_string(block->mtrx.getLenColumn());
-                out_file << str << endl;
-            }
-
-            //Данные
-            if(!blData)
-            {
-                str = "";
-                block->getData(str, delim_tmp);
-                blData = true;
-                out_file << str;
-            }
-
-            if(index < this->modules.size()-1) {out_file << endl;}
-        }
-
+        //out_file.write("", 0); //Очистка файла
+        this->writeHead(out_file); //Шапка файла
+        this->writeBody(out_file); //Запись
         out_file.close(); // Закрываем файл
         return true;
     }
     return false;
 }
 
+void DataECSV::readBody(ifstream& in_file, long seekstop)
+{
+    const char* c_delim_data = this->delim_data.c_str();
+    string str, curs, class_curs;
+    //int r1, r2;
+    vector<string> spec, value_size;
+    StructECSV* block = nullptr;
+    long seek = in_file.tellg();
+
+    while(getline(in_file, str) && seek < seekstop)
+    {
+        spec.clear();
+        value_size.clear();
+        delcomment(str);
+        trimstr(str);
+
+        if(this->isSpec(str)) //Специальная строка
+        {
+            split(spec, str, "=");
+            if(spec.size() > 2) {throw "Many signs \"=\"";}
+
+            //Идентификатор
+            class_curs = spec[0];
+            this->getSpec(class_curs);
+            trimstr(class_curs);
+            curs = class_curs;
+            str_to_lower(curs);
+
+            //Параметры
+            if(curs == "size")
+            {
+                split(value_size, spec[1], c_delim_data);
+                if(value_size.size() > 2 || value_size.size() == 0) {throw "Wrong size!";}
+                //r1 = value_size[0];
+                //r2 = (value_size.size() == 2, value_size[1], 1);
+                //block->mtrx.init(0, r1);
+            }
+            else if(curs == "type")
+            {
+                split(block->type, spec[1], c_delim_data);
+                str_to_element(block->type);
+            }
+            else if(curs == "comment") {} //Комментарий
+            else if(curs == "class" && spec.size() == 2) //Путь к данным
+            {
+                //Новый блок
+                if(block != nullptr) {this->modules.push_back(block);}
+                block = new StructECSV;
+
+                class_curs = spec[1];
+                trimstr(class_curs);
+                block->group = this->getGroup(class_curs);
+                block->splitPath(class_curs);
+            }
+            else if(spec.size() == 1 || spec.size() == 2) //Путь к данным
+            {
+                //Новый блок
+                if(block != nullptr) {this->modules.push_back(block);}
+                block = new StructECSV;
+
+                block->group = this->getGroup(class_curs);
+                block->splitPath(class_curs);
+                if(spec.size() == 2) //Данные
+                {
+                    block = this->addDataMatrix(block, spec[1]);
+                }
+            }
+            else
+            {
+                throw "Wrong identy!";
+            }
+        }
+        else if(str != "") //Данные
+        {
+            block = this->addDataMatrix(block, str);
+        }
+
+        seek = in_file.tellg();
+    }
+
+    if(block != nullptr) {this->modules.push_back(block);}
+}
+
+void DataECSV::writeBody(ofstream& out_file)
+{
+    string delim_tmp = this->delim_data + " ";
+    StructECSV* block;
+    string str;
+    bool blData;
+
+    for(size_t index = 0; index < this->modules.size(); index++)
+    {
+        block = this->modules[index];
+        blData = false;
+
+        //Путь к данным
+        if(block->path.size() >= 1)
+        {
+            if(block->group) {str = "$[" + block->getPath() + "]";}
+            else {str = "$" + block->getPath();}
+
+            if(this->isDataPath(block)) //Данные
+            {
+                block->getData(str, delim_tmp);
+                blData = true;
+                out_file << str;
+            }
+            else
+            {
+                out_file << str << endl;
+            }
+        }
+
+        //Тип данных
+        if(block->path.size() > 0 && block->type.size() > 0)
+        {
+            block->getType(str, delim_tmp);
+            str = "$Type = " + str;
+            out_file << str << endl;
+        }
+
+        //Размер данных
+        if(block->path.size() > 0 && block->mtrx.getLenRow() > 1)
+        {
+            str = "$Size = ";
+            str += to_string(block->mtrx.getLenColumn());
+            str.append(delim_tmp);
+            str += to_string(block->mtrx.getLenRow());
+            out_file << str << endl;
+        }
+        else if(block->path.size() > 0 && block->mtrx.getLenColumn() > 1)
+        {
+            str = "$Size = ";
+            str += to_string(block->mtrx.getLenColumn());
+            out_file << str << endl;
+        }
+
+        //Данные
+        if(!blData)
+        {
+            str = "";
+            block->getData(str, delim_tmp);
+            blData = true;
+            out_file << str;
+        }
+
+        if(index < this->modules.size()-1) {out_file << endl;}
+    }
+}
+
+bool DataECSV::readHead(string name)
+{
+    ifstream in_file; //Открываем файл для считывания информации
+    in_file.open(name, ios_base::in | ios_base::binary);
+
+    if(in_file.is_open())
+    {
+        this->readHead(in_file);
+        in_file.close(); // Закрываем файл
+        return true;
+    }
+    return false;
+}
+
+void DataECSV::readHead(ifstream& in_file)
+{
+    const char* c_delim_data = this->delim_data.c_str();
+    string str = "", curs, class_curs;
+    vector<string> spec, vec_str;
+    long skback = 0;
+
+    in_file.seekg(0, ios_base::beg);
+
+    while(getline(in_file, str))
+    {
+        spec.clear();
+        vec_str.clear();
+        delcomment(str);
+        trimstr(str);
+
+        if(this->isSpec(str)) //Специальная строка
+        {
+            split(spec, str, "=");
+            if(spec.size() > 2) {throw "Many signs \"=\"";}
+
+            //Идентификатор
+            class_curs = spec[0];
+            this->getSpec(class_curs);
+            trimstr(class_curs);
+            curs = class_curs;
+            str_to_lower(curs);
+
+            //Параметры
+            if(curs == "index_module")
+            {
+                split(vec_str, spec[1], c_delim_data);
+                to_array_value(this->indexModule, vec_str);
+            }
+            else if(curs == "index_string")
+            {
+                split(vec_str, spec[1], c_delim_data);
+                to_array_value(this->indexString, vec_str);
+            }
+            else if(curs == "comment") {} //Комментарий
+            else {break;}
+        }
+        else if(str != "") {break;} //Данные
+
+        skback = in_file.tellg();
+    }
+
+    this->seek_back(in_file, skback);
+}
+
+bool DataECSV::writeHead(string name)
+{
+    ofstream out_file; //Открываем файл для записи
+    out_file.open(name, ios_base::out | ios_base::binary);
+
+    if(out_file.is_open())
+    {
+        this->writeHead(out_file);
+        out_file.close(); // Закрываем файл
+        return true;
+    }
+    return false;
+}
+
+void DataECSV::writeHead(ofstream& out_file)
+{
+    const char* c_delim_data = this->delim_data.c_str();
+    vector<string> vec_str;
+    string str;
+
+    out_file.write("", 0); //Очистка файла
+
+    if(this->indexModule.size() > 0)
+    {
+        to_array_string(vec_str, this->indexModule);
+        concat(str, vec_str, c_delim_data);
+        str = "$IndexModule = " + str;
+        out_file << str << endl;
+    }
+
+    if(this->indexString.size() > 0)
+    {
+        to_array_string(vec_str, this->indexString);
+        concat(str, vec_str, c_delim_data);
+        str = "$IndexString = " + str;
+        out_file << str << endl;
+    }
+
+    out_file << endl;
+}
+
+bool DataECSV::readObj(string name, size_t num)
+{
+    ifstream in_file; //Открываем файл для считывания информации
+    in_file.open(name, ios_base::in | ios_base::binary);
+
+    if(in_file.is_open())
+    {
+        //this->readHead(in_file);
+        this->readObj(in_file, num);
+        in_file.close(); // Закрываем файл
+        return true;
+    }
+    return false;
+}
+
+void DataECSV::readObj(ifstream& in_file, size_t num)
+{
+    this->seekr(in_file, num);
+    this->readBody(in_file, this->indexString[num]);
+}
+
+bool DataECSV::appendObj(string name)
+{
+    ofstream out_file; //Открываем файл для записи
+    out_file.open(name, ios_base::app | ios_base::binary);
+
+    if(out_file.is_open())
+    {
+        this->appendObj(out_file); //Запись
+        out_file.close(); // Закрываем файл
+        return true;
+    }
+    return false;
+}
+
+void DataECSV::appendObj(ofstream& out_file)
+{
+    out_file.seekp(0, ios_base::end);
+    this->seekw(out_file, false);
+    this->writeBody(out_file);
+}
+
+void DataECSV::seekr(ifstream& in_file, size_t ind)
+{
+    if(ind == 0) {in_file.seekg(0, ios_base::beg);}
+    else {in_file.seekg(this->indexString[ind-1]);}
+}
+
+void DataECSV::seekw(ofstream& out_file, bool seq)
+{
+    if(seq) {this->indexModule.push_back(this->modules.size());}
+    else {this->indexModule.push_back(*this->indexModule.rbegin() + this->modules.size());}
+    this->indexString.push_back(out_file.tellp());
+}
+
+bool DataECSV::unionHeadBody(string index_name, string body_name)
+{
+    ofstream index_file(index_name);
+    ifstream body_file(body_name);
+
+    if(index_file.is_open() && body_file.is_open())
+    {
+        this->unionHeadBody(index_file, body_file);
+        index_file.close();
+        body_file.close();
+        return true;
+    }
+    return false;
+}
+
+void DataECSV::unionHeadBody(ofstream& index_file, ifstream& body_file)
+{
+    int length = 512;
+    char* buffer = new char[length];
+    index_file.seekp(0, ios_base::end);
+    body_file.seekg(0, ios_base::beg);
+    while(body_file.read(buffer, length))
+    {
+        index_file << buffer;
+    }
+    delete[] buffer;
+}
+
+
 StructECSV* DataECSV::addElement(string& parent, const string& field, string& value, string& type)
 {
     StructECSV* block = new StructECSV;
 
-    if(parent != "") {this->splitPath(block->path, parent);}
+    if(parent != "") {block->splitPath(parent);}
     if(field != "") {block->path.push_back(field);}
     if(type != "") {block->type.push_back(type);}
     block->typeECSV.push_back(TypeDataECSV::Element);
@@ -275,7 +500,7 @@ StructECSV* DataECSV::addElement(string& parent, const string& field, vector<str
 {
     StructECSV* block = new StructECSV;
 
-    if(parent != "") {this->splitPath(block->path, parent);}
+    if(parent != "") {block->splitPath(parent);}
     if(field != "") {block->path.push_back(field);}
     if(type != "") {block->type.push_back(type);}
     block->typeECSV.push_back(TypeDataECSV::Element);
@@ -289,7 +514,7 @@ StructECSV* DataECSV::addElement(string& parent, const string& field, NArray<str
 {
     StructECSV* block = new StructECSV;
 
-    if(parent != "") {this->splitPath(block->path, parent);}
+    if(parent != "") {block->splitPath(parent);}
     if(field != "") {block->path.push_back(field);}
     if(type != "") {block->type.push_back(type);}
     block->typeECSV.push_back(TypeDataECSV::Element);
@@ -303,7 +528,7 @@ StructECSV* DataECSV::addElement(string& parent, const string& field, NMatrix<st
 {
     StructECSV* block = new StructECSV;
 
-    if(parent != "") {this->splitPath(block->path, parent);}
+    if(parent != "") {block->splitPath(parent);}
     if(field != "") {block->path.push_back(field);}
     if(type != "") {block->type.push_back(type);}
     block->typeECSV.push_back(TypeDataECSV::Element);
@@ -341,7 +566,7 @@ StructECSV* DataECSV::addString(string& parent, const string& field, string& val
 {
     StructECSV* block = new StructECSV;
 
-    if(parent != "") {this->splitPath(block->path, parent);}
+    if(parent != "") {block->splitPath(parent);}
     if(field != "") {block->path.push_back(field);}
     //if(type != "") {block->type.push_back(type);}
     block->typeECSV.push_back(TypeDataECSV::String);
@@ -356,7 +581,7 @@ StructECSV* DataECSV::addString(string& parent, const string& field, vector<stri
 {
     StructECSV* block = new StructECSV;
 
-    if(parent != "") {this->splitPath(block->path, parent);}
+    if(parent != "") {block->splitPath(parent);}
     if(field != "") {block->path.push_back(field);}
     //if(type != "") {block->type.push_back(type);}
     block->typeECSV.push_back(TypeDataECSV::String);
@@ -370,7 +595,7 @@ StructECSV* DataECSV::addString(string& parent, const string& field, NArray<stri
 {
     StructECSV* block = new StructECSV;
 
-    if(parent != "") {this->splitPath(block->path, parent);}
+    if(parent != "") {block->splitPath(parent);}
     if(field != "") {block->path.push_back(field);}
     //if(type != "") {block->type.push_back(type);}
     block->typeECSV.push_back(TypeDataECSV::String);
@@ -384,7 +609,7 @@ StructECSV* DataECSV::addString(string& parent, const string& field, NMatrix<str
 {
     StructECSV* block = new StructECSV;
 
-    if(parent != "") {this->splitPath(block->path, parent);}
+    if(parent != "") {block->splitPath(parent);}
     if(field != "") {block->path.push_back(field);}
     //if(type != "") {block->type.push_back(type);}
     block->typeECSV.push_back(TypeDataECSV::String);
@@ -392,4 +617,28 @@ StructECSV* DataECSV::addString(string& parent, const string& field, NMatrix<str
     block->mtrx = value;
     this->modules.push_back(block);
     return block;
+}
+
+StructECSV* DataECSV::addGroup(string& parent, string& type)
+{
+    StructECSV* block = nullptr;
+    if(parent != "")
+    {
+        block = new StructECSV;
+
+        block->splitPath(parent);
+        if(type != "") {block->type.push_back(type);}
+        block->typeECSV.push_back(TypeDataECSV::Element);
+        block->group = true;
+
+        this->modules.push_back(block);
+    }
+
+    return block;
+}
+
+StructECSV* DataECSV::addGroup(string& parent, const char* type)
+{
+    string str_type(type);
+    return this->addGroup(parent, str_type);
 }
