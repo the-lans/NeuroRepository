@@ -8,8 +8,8 @@ int main()
 {
     //Доступ к данным
     DataECSV dt;
-    //string path = "K:\\!ProgramProjects\\NeuroProject\\ProjectECSV\\files\\";
-    string path = "D:\\ProgramProjects\\NeuroProject\\ProjectECSV\\files\\";
+    //string path = "E:\\!ProgramProjects\\NeuroProject\\ProjectECSV\\files\\";
+    string path = "D:\\Ilya\\Prog\\ProjectECSV\\files\\";
     string parent = ".base";
 
     //Объекты

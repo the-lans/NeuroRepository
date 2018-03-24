@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <ctime>
+#include <random>
 
 template <typename NType> class NMatrix;
 
@@ -71,8 +72,9 @@ public:
     void copyValue(NArray<NType>& obj); //Копирование значений
     void destruct(); //Деструктор
     void init(int length); //Инициализация
-    void init(int length, NType value); //Инициализация значением
-    void init_value(NType value); //Инициализация значением
+    void init(int length, const NType& value); //Инициализация значением
+    void init_value(const NType& value); //Инициализация значением
+    void init_rand(std::default_random_engine& generator, const NType& valMin, const NType& valMax); //Инициализация случайными числами
     void clear(); //Очистка массива
     void add(const NType& element, int pos, int count); //Вставка элемента в позицию
     void add(const NType& element, int pos); //Вставка элемента в позицию
@@ -86,8 +88,10 @@ public:
     void renew(int size); //Перевыделение памяти (все данные стираются)
     void copyFields(NArray<NType>& obj); //Копирование полей
     void memCopy(NType* src); //Копирование данных массива
+    void memCopy(NType* src, int shift, int len);
     void memCopy(NType* dst, NType* src); //Копирование данных массива
     void dataCopy(NType* src); //Поэлементное копирование
+    void dataCopy(NType* src, int shift, int len);
     void dataCopy(NType* dst, NType* src); //Поэлементное копирование
     void convertUInt(NArray<unsigned int>& dest); //Конвертация массива uint в элементы массива
     NArray<unsigned int>& toUInt(NArray<unsigned int>& dest); //Конвертация элементов массива в uint
@@ -96,12 +100,18 @@ public:
 public:
     NType sumElements();
     NType sumElements(int sift);
-    NArray<NType>& valsum(NType& B);
+    NArray<NType>& valsum(const NType& B);
     NArray<NType>& sum(NArray<NType>& B);
     NArray<NType>& sum(NArray<NType>& A, NArray<NType>& B);
-    NArray<NType>& valmul(NType& B);
+    NArray<NType>& valmul(const NType& B);
+    NArray<NType>& valsign();
+    NArray<NType>& valdiv(const NType& B);
     NArray<NType>& mul(NArray<NType>& B);
     NArray<NType>& mul(NArray<NType>& A, NArray<NType>& B);
+    NArray<NType>& div(NArray<NType>& B);
+    NArray<NType>& div(NArray<NType>& A, NArray<NType>& B);
+    NArray<NType>& prufdiv(NArray<NType>& B, const NType& val);
+    NArray<NType>& prufdiv(NArray<NType>& A, NArray<NType>& B, const NType& val);
     NArray<NType>& mul(NMatrix<NType>& B, bool orient);
     NArray<NType>& mul(NArray<NType>& A, NMatrix<NType>& B, bool orient);
     NArray<NType>& mul(NMatrix<NType>& B, NArray<NType>& A, bool orient);
@@ -389,7 +399,7 @@ void NArray<NType>::srand()
 template <typename NType>
 int NArray<NType>::random_index(int beg, int end)
 {
-    return (beg + std::rand() % (end - beg));
+    return (std::rand() % (end - beg) + beg);
 }
 
 template <typename NType>
@@ -463,7 +473,7 @@ void NArray<NType>::init(int length)
 }
 
 template <typename NType>
-void NArray<NType>::init(int length, NType value)
+void NArray<NType>::init(int length, const NType& value)
 {
     if(length > this->size)
     {
@@ -476,11 +486,23 @@ void NArray<NType>::init(int length, NType value)
 }
 
 template <typename NType>
-void NArray<NType>::init_value(NType value)
+void NArray<NType>::init_value(const NType& value)
 {
     for(int i = 0; i < length; i++)
     {
         data[i] = value;
+    }
+}
+
+template <typename NType>
+void NArray<NType>::init_rand(std::default_random_engine& generator, const NType& valMin, const NType& valMax)
+{
+    std::uniform_real_distribution<> distribution(valMin, valMax);
+    //NType koef = (valMax - valMin)/(NType)RAND_MAX;
+    for(int i = 0; i < length; i++)
+    {
+        //data[i] = koef * (NType)rand() + valMin;
+        data[i] = distribution(generator);
     }
 }
 
@@ -623,6 +645,12 @@ void NArray<NType>::memCopy(NType* src)
 }
 
 template <typename NType>
+void NArray<NType>::memCopy(NType* src, int shift, int len)
+{
+    memcpy(this->data + shift, src, len * sizeof(NType));
+}
+
+template <typename NType>
 void NArray<NType>::memCopy(NType* dst, NType* src)
 {
     memcpy(dst, src, this->length * sizeof(NType));
@@ -634,6 +662,15 @@ void NArray<NType>::dataCopy(NType* src)
     for(int i = 0; i < length; i++)
     {
         data[i] = src[i];
+    }
+}
+
+template <typename NType>
+void NArray<NType>::dataCopy(NType* src, int shift, int len)
+{
+    for(int i = 0; i < len; i++)
+    {
+        data[i + shift] = src[i];
     }
 }
 
@@ -706,7 +743,7 @@ NType NArray<NType>::sumElements(int shift)
 }
 
 template <typename NType>
-NArray<NType>& NArray<NType>::valsum(NType& B)
+NArray<NType>& NArray<NType>::valsum(const NType& B)
 {
     for(int i = 0; i < length; i++)
     {
@@ -739,11 +776,31 @@ NArray<NType>& NArray<NType>::sum(NArray<NType>& A, NArray<NType>& B)
 }
 
 template <typename NType>
-NArray<NType>& NArray<NType>::valmul(NType& B)
+NArray<NType>& NArray<NType>::valmul(const NType& B)
 {
     for(int i = 0; i < length; i++)
     {
         data[i] *= B;
+    }
+    return (*this);
+}
+
+template <typename NType>
+NArray<NType>& NArray<NType>::valsign()
+{
+    for(int i = 0; i < length; i++)
+    {
+        data[i] = -data[i];
+    }
+    return (*this);
+}
+
+template <typename NType>
+NArray<NType>& NArray<NType>::valdiv(const NType& B)
+{
+    for(int i = 0; i < length; i++)
+    {
+        data[i] /= B;
     }
     return (*this);
 }
@@ -827,6 +884,52 @@ NArray<NType>& NArray<NType>::mul(NArray<NType>& A, NArray<NType>& B)
     for(int i = 0; i < length; i++)
     {
         data[i] = pA[i] * pB[i];
+    }
+    return (*this);
+}
+
+template <typename NType>
+NArray<NType>& NArray<NType>::div(NArray<NType>& B)
+{
+    NType* pB = B.getData();
+    for(int i = 0; i < length; i++)
+    {
+        data[i] /= pB[i];
+    }
+    return (*this);
+}
+
+template <typename NType>
+NArray<NType>& NArray<NType>::div(NArray<NType>& A, NArray<NType>& B)
+{
+    NType* pA = A.getData();
+    NType* pB = B.getData();
+    for(int i = 0; i < length; i++)
+    {
+        data[i] = pA[i] / pB[i];
+    }
+    return (*this);
+}
+
+template <typename NType>
+NArray<NType>& NArray<NType>::prufdiv(NArray<NType>& B, const NType& val)
+{
+    NType* pB = B.getData();
+    for(int i = 0; i < length; i++)
+    {
+        data[i] = (pB[i] == 0 ? val : data[i] / pB[i]);
+    }
+    return (*this);
+}
+
+template <typename NType>
+NArray<NType>& NArray<NType>::prufdiv(NArray<NType>& A, NArray<NType>& B, const NType& val)
+{
+    NType* pA = A.getData();
+    NType* pB = B.getData();
+    for(int i = 0; i < length; i++)
+    {
+        data[i] = (pB[i] == 0 ? val : pA[i] / pB[i]);
     }
     return (*this);
 }

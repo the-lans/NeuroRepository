@@ -5,9 +5,12 @@
 #include "nmatrix.h"
 #include <string>
 #include <vector>
+//#include <map>
+#include <algorithm>
 #include <typeinfo>
 #include <ctype.h>
 #include <cstdlib>
+#include <iostream>
 
 using namespace std;
 
@@ -18,6 +21,12 @@ void boolinit(bool* mas, int n, bool val); //Инициализация масс
 bool booland(bool* mas, int n); //Сравнение элементов массива, операция AND
 bool boolor(bool* mas, int n); //Сравнение элементов массива, операция OR
 
+string getpath(string parent, string& field, const char sym = '.'); //Возвращает цельный путь
+string getpath(string parent, const string& field, const char sym = '.');
+bool resolvedfield(vector<string>* fieldsNotSave, string& parent, string& field); //Разрешённое поле
+bool resolvedfield(vector<string>* fieldsNotSave, string& parent, const string& field);
+bool cmppath(const string& str, const string& strsub, bool acc, const char* sym = "."); //Подстрока входит в строку
+bool cmppath(vector<string>& path, vector<string>& subpath, bool acc);
 bool cmpstrslash(const string& str, size_t ind1, size_t ind2); //Сравнение с символом экранирования
 void split(vector<string>& dest, const string& str, const char* delim); //Разделение строки на подстроки по разделителю
 void split_no_slash(vector<string>& dest, const string& str, const char* delim); //Разделение строки на подстроки по разделителю с учётом символа экранирования

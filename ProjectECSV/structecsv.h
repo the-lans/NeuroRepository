@@ -32,7 +32,7 @@ struct StructECSV
     string getMatrixValue();
     vector<string>& getMatrixVector(vector<string>& value); //Вернуть вектор из основной матрицы
     NArray<string>& getMatrixVector(NArray<string>& value); //Вернуть вектор из основной матрицы
-    bool isField(string& parent, const string& field); //Поле совпадает с блоком?
+    bool isField(string parent, const string& field); //Поле совпадает с блоком?
     bool getFieldValue(string& parent, const string& field, NMatrix<string>& value); //Возврат матрицы из блока
     bool getFieldValue(string& parent, const string& field, vector<string>& value); //Возврат вектора из блока
     bool getFieldValue(string& parent, const string& field, NArray<string>& value); //Возврат вектора из блока

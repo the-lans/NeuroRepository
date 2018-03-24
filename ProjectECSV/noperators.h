@@ -28,51 +28,51 @@ bool operator==(const NMatrix<NType>& left, const NMatrix<NType>& right)
 }
 
 template <typename NType>
-NMatrix<NType>& operator+(const NMatrix<NType>& A, const NMatrix<NType>& B)
+NMatrix<NType> operator+(const NMatrix<NType>& A, const NMatrix<NType>& B)
 {
-    NMatrix<NType> C = new NMatrix<NType>(A); // C = A
+    NMatrix<NType> C(A); // C = A
     return C.sum(B); // C = C + B
 }
 
 template <typename NType>
-NMatrix<NType>& operator-(const NMatrix<NType>& A, const NMatrix<NType>& B)
+NMatrix<NType> operator-(const NMatrix<NType>& A, const NMatrix<NType>& B)
 {
-    NMatrix<NType> C = new NMatrix<NType>(A);
-    return C.sum(-1 * B);
+    NMatrix<NType> C(A);
+    return C.sum(B.valsign());
 }
 
 template <typename NType>
-NMatrix<NType>& operator*(const NMatrix<NType>& A, const NMatrix<NType>& B)
+NMatrix<NType> operator*(const NMatrix<NType>& A, const NMatrix<NType>& B)
 {
-    NMatrix<NType> C = new NMatrix<NType>();
-    return C.mul(A, B, true);
+    NMatrix<NType> C(A);
+    return C.mul(B, true);
 }
 
 template <typename NType>
-NMatrix<NType>& operator+(const NMatrix<NType>& A, const NType& B)
+NMatrix<NType> operator+(const NMatrix<NType>& A, const NType& B)
 {
-    NMatrix<NType> C = new NMatrix<NType>(A);
+    NMatrix<NType> C(A);
     return C.valsum(B);
 }
 
 template <typename NType>
-NMatrix<NType>& operator*(const NMatrix<NType>& A, const NType& B)
+NMatrix<NType> operator*(const NMatrix<NType>& A, const NType& B)
 {
-    NMatrix<NType> C = new NMatrix<NType>(A);
+    NMatrix<NType> C(A);
     return C.valmul(B);
 }
 
 template <typename NType>
-NMatrix<NType>& operator+(const NType& B, const NMatrix<NType>& A)
+NMatrix<NType> operator+(const NType& B, const NMatrix<NType>& A)
 {
-    NMatrix<NType> C = new NMatrix<NType>(A);
+    NMatrix<NType> C(A);
     return C.valsum(B);
 }
 
 template <typename NType>
-NMatrix<NType>& operator*(const NType& B, const NMatrix<NType>& A)
+NMatrix<NType> operator*(const NType& B, const NMatrix<NType>& A)
 {
-    NMatrix<NType> C = new NMatrix<NType>(A);
+    NMatrix<NType> C(A);
     return C.valmul(B);
 }
 
@@ -92,45 +92,52 @@ bool operator==(const NArray<NType>& left, const NArray<NType>& right)
 }
 
 template <typename NType>
-NArray<NType>& operator+(const NArray<NType>& A, const NType& B)
+NArray<NType> operator+(const NArray<NType>& A, const NType& B)
 {
-    NArray<NType> C = new NArray<NType>(A); // C = A
-    return C.sum(B); // C = C + B
+    NArray<NType> C(A); // C = A
+    return C.valsum(B); // C = C + B
 }
 
 template <typename NType>
-NArray<NType>& operator+(const NType& B, const NArray<NType>& A)
+NArray<NType> operator+(const NType& B, const NArray<NType>& A)
 {
-    NArray<NType> C = new NArray<NType>(A); // C = A
-    return C.sum(B); // C = C + B
+    NArray<NType> C(A); // C = A
+    return C.valsum(B); // C = C + B
 }
 
 template <typename NType>
-NArray<NType>& operator*(const NArray<NType>& A, const NType& B)
+NArray<NType> operator*(const NArray<NType>& A, const NType& B)
 {
-    NArray<NType> C = new NArray<NType>(A); // C = A
-    return C.mul(B); // C = C * B
+    NArray<NType> C(A); // C = A
+    return C.valmul(B); // C = C * B
 }
 
 template <typename NType>
-NArray<NType>& operator*(const NType& B, const NArray<NType>& A)
+NArray<NType> operator*(const NType& B, const NArray<NType>& A)
 {
-    NArray<NType> C = new NArray<NType>(A); // C = A
-    return C.mul(B); // C = C * B
+    NArray<NType> C(A); // C = A
+    return C.valmul(B); // C = C * B
 }
 
 template <typename NType>
-NArray<NType>& operator*(const NArray<NType>& A, const NMatrix<NType>& B)
+NArray<NType> operator/(const NArray<NType>& A, const NType& B)
 {
-    NArray<NType> C = new NArray<NType>();
-    return C.mul(A, B, true); // C = A * B
+    NArray<NType> C(A); // C = A
+    return C.valmul(B); // C = C * B
 }
 
 template <typename NType>
-NArray<NType>& operator*(const NMatrix<NType>& B, const NArray<NType>& A)
+NArray<NType> operator*(const NArray<NType>& A, const NMatrix<NType>& B)
 {
-    NArray<NType> C = new NArray<NType>();
-    return C.mul(A, B, true); // C = A * B
+    NArray<NType> C(A); // C = A
+    return C.mul(B, true); // C = C * B
+}
+
+template <typename NType>
+NArray<NType> operator*(const NMatrix<NType>& B, const NArray<NType>& A)
+{
+    NArray<NType> C(A); // C = A
+    return C.mul(B, true); // C = C * B
 }
 
 #endif // NOPERATORS_H

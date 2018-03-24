@@ -2,9 +2,10 @@
 
 DataECSV::DataECSV()
 {
+    this->fieldsNotSave = nullptr;
     this->shift = 0;
     this->delim_data = ";";
-    this->array_br = false;
+    this->array_br = true;
 }
 
 void DataECSV::setShift(size_t ind)
@@ -15,6 +16,11 @@ void DataECSV::setShift(size_t ind)
 size_t DataECSV::getShift()
 {
     return this->shift;
+}
+
+size_t DataECSV::getIndexSize()
+{
+    return this->indexSize;
 }
 
 void DataECSV::setDelimData(string& delim)
@@ -86,14 +92,28 @@ StructECSV* DataECSV::addDataMatrix(StructECSV* block, string& str)
 
 void DataECSV::clear()
 {
+    this->clearIndex();
+    this->clearData();
+}
+
+void DataECSV::clearData()
+{
     StructECSV* block;
+
     while(!this->modules.empty())
     {
         block = this->modules.back();
         delete block;
         this->modules.pop_back();
     }
+
     this->beginShift();
+}
+
+void DataECSV::clearIndex()
+{
+    this->indexModule.clear();
+    this->indexString.clear();
 }
 
 bool DataECSV::isOneMatrix()
@@ -101,15 +121,26 @@ bool DataECSV::isOneMatrix()
     return this->modules.size() == 1 && this->modules[0]->path.size() == 0;
 }
 
-void DataECSV::seek_back(ifstream& sm, long skback)
+void DataECSV::seek_back(fstream& sm, long skback)
 {
     sm.seekg(skback, ios_base::beg);
+}
+
+void DataECSV::shiftIndexString(fstream& index_file)
+{
+    index_file.seekp(0, ios_base::end);
+    long fsize = index_file.tellp();
+
+    for(size_t i = 0; i < this->indexString.size(); i++)
+    {
+        this->indexString[i] += fsize;
+    }
 }
 
 bool DataECSV::read(string name)
 {
     this->clear();
-    ifstream in_file; //Открываем файл для считывания информации
+    fstream in_file; //Открываем файл для считывания информации
     in_file.open(name, ios_base::in | ios_base::binary);
 
     if(in_file.is_open())
@@ -128,12 +159,11 @@ bool DataECSV::read(string name)
 
 bool DataECSV::write(string name)
 {
-    ofstream out_file; //Открываем файл для записи
+    fstream out_file; //Открываем файл для записи
     out_file.open(name, ios_base::out | ios_base::binary);
 
     if(out_file.is_open())
     {
-        //out_file.write("", 0); //Очистка файла
         this->writeHead(out_file); //Шапка файла
         this->writeBody(out_file); //Запись
         out_file.close(); // Закрываем файл
@@ -142,7 +172,7 @@ bool DataECSV::write(string name)
     return false;
 }
 
-void DataECSV::readBody(ifstream& in_file, long seekstop)
+void DataECSV::readBody(fstream& in_file, long seekstop)
 {
     const char* c_delim_data = this->delim_data.c_str();
     string str, curs, class_curs;
@@ -225,14 +255,19 @@ void DataECSV::readBody(ifstream& in_file, long seekstop)
     if(block != nullptr) {this->modules.push_back(block);}
 }
 
-void DataECSV::writeBody(ofstream& out_file)
+void DataECSV::writeBody(fstream& out_file)
 {
     string delim_tmp = this->delim_data + " ";
     StructECSV* block;
     string str;
     bool blData;
 
-    for(size_t index = 0; index < this->modules.size(); index++)
+    out_file.seekp(0, ios_base::end);
+    long fsize = out_file.tellp();
+    if(fsize > 0) {out_file << endl;}
+    size_t num = this->modules.size();
+
+    for(size_t index = 0; index < num; index++)
     {
         block = this->modules[index];
         blData = false;
@@ -288,13 +323,13 @@ void DataECSV::writeBody(ofstream& out_file)
             out_file << str;
         }
 
-        if(index < this->modules.size()-1) {out_file << endl;}
+        if(index < num-1) {out_file << endl;}
     }
 }
 
 bool DataECSV::readHead(string name)
 {
-    ifstream in_file; //Открываем файл для считывания информации
+    fstream in_file; //Открываем файл для считывания информации
     in_file.open(name, ios_base::in | ios_base::binary);
 
     if(in_file.is_open())
@@ -306,16 +341,17 @@ bool DataECSV::readHead(string name)
     return false;
 }
 
-void DataECSV::readHead(ifstream& in_file)
+void DataECSV::readHead(fstream& in_file)
 {
     const char* c_delim_data = this->delim_data.c_str();
     string str = "", curs, class_curs;
     vector<string> spec, vec_str;
     long skback = 0;
+    bool blExit = true;
 
     in_file.seekg(0, ios_base::beg);
 
-    while(getline(in_file, str))
+    while(blExit && getline(in_file, str))
     {
         spec.clear();
         vec_str.clear();
@@ -335,31 +371,40 @@ void DataECSV::readHead(ifstream& in_file)
             str_to_lower(curs);
 
             //Параметры
-            if(curs == "index_module")
+            if(curs == "indexmodule")
             {
                 split(vec_str, spec[1], c_delim_data);
                 to_array_value(this->indexModule, vec_str);
             }
-            else if(curs == "index_string")
+            else if(curs == "indexstring")
             {
                 split(vec_str, spec[1], c_delim_data);
                 to_array_value(this->indexString, vec_str);
             }
             else if(curs == "comment") {} //Комментарий
-            else {break;}
+            else {blExit = false;}
         }
-        else if(str != "") {break;} //Данные
+        else if(str != "") {blExit = false;} //Данные
 
-        skback = in_file.tellg();
+        if(blExit) {skback = in_file.tellg();}
     }
 
-    this->seek_back(in_file, skback);
+    if(in_file.eof())
+    {
+        in_file.seekg(0, ios_base::end);
+        skback = in_file.tellg();
+    }
+    else
+    {
+        this->seek_back(in_file, skback);
+    }
+    this->indexSize = skback;
 }
 
 bool DataECSV::writeHead(string name)
 {
-    ofstream out_file; //Открываем файл для записи
-    out_file.open(name, ios_base::out | ios_base::binary);
+    fstream out_file; //Открываем файл для записи
+    out_file.open(name, ios_base::out | ios_base::trunc | ios_base::binary);
 
     if(out_file.is_open())
     {
@@ -370,36 +415,44 @@ bool DataECSV::writeHead(string name)
     return false;
 }
 
-void DataECSV::writeHead(ofstream& out_file)
+void DataECSV::writeHead(fstream& out_file)
 {
-    const char* c_delim_data = this->delim_data.c_str();
+    string delim_tmp = this->delim_data + " ";
     vector<string> vec_str;
     string str;
+    bool isHead = false;
 
-    out_file.write("", 0); //Очистка файла
+    //Очистка файла
+    //out_file.close();
+    //out_file.open(out_file, ios_base::out | ios_base::trunc | ios_base::binary);
 
     if(this->indexModule.size() > 0)
     {
         to_array_string(vec_str, this->indexModule);
-        concat(str, vec_str, c_delim_data);
+        concat(str, vec_str, delim_tmp.c_str());
         str = "$IndexModule = " + str;
         out_file << str << endl;
+        isHead = true;
     }
 
     if(this->indexString.size() > 0)
     {
         to_array_string(vec_str, this->indexString);
-        concat(str, vec_str, c_delim_data);
+        concat(str, vec_str, delim_tmp.c_str());
         str = "$IndexString = " + str;
         out_file << str << endl;
+        isHead = true;
     }
 
-    out_file << endl;
+    if(isHead) {out_file << endl;}
+
+    out_file.seekp(0, ios_base::end);
+    this->indexSize = out_file.tellp();
 }
 
 bool DataECSV::readObj(string name, size_t num)
 {
-    ifstream in_file; //Открываем файл для считывания информации
+    fstream in_file; //Открываем файл для считывания информации
     in_file.open(name, ios_base::in | ios_base::binary);
 
     if(in_file.is_open())
@@ -412,7 +465,7 @@ bool DataECSV::readObj(string name, size_t num)
     return false;
 }
 
-void DataECSV::readObj(ifstream& in_file, size_t num)
+void DataECSV::readObj(fstream& in_file, size_t num)
 {
     this->seekr(in_file, num);
     this->readBody(in_file, this->indexString[num]);
@@ -420,8 +473,8 @@ void DataECSV::readObj(ifstream& in_file, size_t num)
 
 bool DataECSV::appendObj(string name)
 {
-    ofstream out_file; //Открываем файл для записи
-    out_file.open(name, ios_base::app | ios_base::binary);
+    fstream out_file; //Открываем файл для записи
+    out_file.open(name, ios_base::out | ios_base::app | ios_base::binary);
 
     if(out_file.is_open())
     {
@@ -432,30 +485,39 @@ bool DataECSV::appendObj(string name)
     return false;
 }
 
-void DataECSV::appendObj(ofstream& out_file)
+void DataECSV::appendObj(fstream& out_file)
 {
     out_file.seekp(0, ios_base::end);
     this->seekw(out_file, false);
     this->writeBody(out_file);
 }
 
-void DataECSV::seekr(ifstream& in_file, size_t ind)
+void DataECSV::seekr(fstream& in_file, size_t ind)
 {
     if(ind == 0) {in_file.seekg(0, ios_base::beg);}
     else {in_file.seekg(this->indexString[ind-1]);}
 }
 
-void DataECSV::seekw(ofstream& out_file, bool seq)
+void DataECSV::seekw(fstream& out_file, bool seq)
 {
-    if(seq) {this->indexModule.push_back(this->modules.size());}
-    else {this->indexModule.push_back(*this->indexModule.rbegin() + this->modules.size());}
-    this->indexString.push_back(out_file.tellp());
+    if(seq || this->indexModule.size() == 0)
+    {
+        this->indexModule.push_back(this->modules.size());
+    }
+    else
+    {
+        this->indexModule.push_back(*(this->indexModule.rbegin()) + this->modules.size());
+    }
+
+    long seek = out_file.tellp();
+    this->indexString.push_back(seek);
 }
 
 bool DataECSV::unionHeadBody(string index_name, string body_name)
 {
-    ofstream index_file(index_name);
-    ifstream body_file(body_name);
+    fstream index_file, body_file;
+    index_file.open(index_name, ios_base::out | ios_base::app | ios_base::binary);
+    body_file.open(body_name, ios_base::in | ios_base::binary);
 
     if(index_file.is_open() && body_file.is_open())
     {
@@ -467,74 +529,98 @@ bool DataECSV::unionHeadBody(string index_name, string body_name)
     return false;
 }
 
-void DataECSV::unionHeadBody(ofstream& index_file, ifstream& body_file)
+void DataECSV::unionHeadBody(fstream& index_file, fstream& body_file)
 {
     int length = 512;
     char* buffer = new char[length];
     index_file.seekp(0, ios_base::end);
     body_file.seekg(0, ios_base::beg);
-    while(body_file.read(buffer, length))
+
+    while(!body_file.eof())
     {
-        index_file << buffer;
+        body_file.read(buffer, length);
+        index_file.write(buffer, body_file.gcount());
     }
+    index_file.flush();
+
     delete[] buffer;
 }
 
 
 StructECSV* DataECSV::addElement(string& parent, const string& field, string& value, string& type)
 {
-    StructECSV* block = new StructECSV;
+    StructECSV* block = nullptr;
 
-    if(parent != "") {block->splitPath(parent);}
-    if(field != "") {block->path.push_back(field);}
-    if(type != "") {block->type.push_back(type);}
-    block->typeECSV.push_back(TypeDataECSV::Element);
+    if(resolvedfield(this->fieldsNotSave, parent, field))
+    {
+        block = new StructECSV;
+        if(parent != "") {block->splitPath(parent);}
+        if(field != "") {block->path.push_back(field);}
+        if(type != "") {block->type.push_back(type);}
+        block->typeECSV.push_back(TypeDataECSV::Element);
 
-    block->mtrx.init(1, 1);
-    block->mtrx.set(value, 0, 0);
-    this->modules.push_back(block);
+        block->mtrx.init(1, 1);
+        block->mtrx.set(value, 0, 0);
+        this->modules.push_back(block);
+    }
+
     return block;
 }
 
 StructECSV* DataECSV::addElement(string& parent, const string& field, vector<string>& value, string& type)
 {
-    StructECSV* block = new StructECSV;
+    StructECSV* block = nullptr;
 
-    if(parent != "") {block->splitPath(parent);}
-    if(field != "") {block->path.push_back(field);}
-    if(type != "") {block->type.push_back(type);}
-    block->typeECSV.push_back(TypeDataECSV::Element);
+    if(resolvedfield(this->fieldsNotSave, parent, field))
+    {
+        block = new StructECSV;
+        if(parent != "") {block->splitPath(parent);}
+        if(field != "") {block->path.push_back(field);}
+        if(type != "") {block->type.push_back(type);}
+        block->typeECSV.push_back(TypeDataECSV::Element);
 
-    block->mtrx.pushRow(value);
-    this->modules.push_back(block);
+        block->mtrx.pushRow(value);
+        this->modules.push_back(block);
+    }
+
     return block;
 }
 
 StructECSV* DataECSV::addElement(string& parent, const string& field, NArray<string>& value, string& type)
 {
-    StructECSV* block = new StructECSV;
+    StructECSV* block = nullptr;
 
-    if(parent != "") {block->splitPath(parent);}
-    if(field != "") {block->path.push_back(field);}
-    if(type != "") {block->type.push_back(type);}
-    block->typeECSV.push_back(TypeDataECSV::Element);
+    if(resolvedfield(this->fieldsNotSave, parent, field))
+    {
+        block = new StructECSV;
+        if(parent != "") {block->splitPath(parent);}
+        if(field != "") {block->path.push_back(field);}
+        if(type != "") {block->type.push_back(type);}
+        block->typeECSV.push_back(TypeDataECSV::Element);
 
-    block->mtrx.pushRow(value);
-    this->modules.push_back(block);
+        block->mtrx.pushRow(value);
+        this->modules.push_back(block);
+    }
+
     return block;
 }
 
 StructECSV* DataECSV::addElement(string& parent, const string& field, NMatrix<string>& value, string& type)
 {
-    StructECSV* block = new StructECSV;
+    StructECSV* block = nullptr;
 
-    if(parent != "") {block->splitPath(parent);}
-    if(field != "") {block->path.push_back(field);}
-    if(type != "") {block->type.push_back(type);}
-    block->typeECSV.push_back(TypeDataECSV::Element);
+    if(resolvedfield(this->fieldsNotSave, parent, field))
+    {
+        block = new StructECSV;
+        if(parent != "") {block->splitPath(parent);}
+        if(field != "") {block->path.push_back(field);}
+        if(type != "") {block->type.push_back(type);}
+        block->typeECSV.push_back(TypeDataECSV::Element);
 
-    block->mtrx = value;
-    this->modules.push_back(block);
+        block->mtrx = value;
+        this->modules.push_back(block);
+    }
+
     return block;
 }
 
@@ -564,58 +650,78 @@ StructECSV* DataECSV::addElement(string& parent, const string& field, NMatrix<st
 
 StructECSV* DataECSV::addString(string& parent, const string& field, string& value)
 {
-    StructECSV* block = new StructECSV;
+    StructECSV* block = nullptr;
 
-    if(parent != "") {block->splitPath(parent);}
-    if(field != "") {block->path.push_back(field);}
-    //if(type != "") {block->type.push_back(type);}
-    block->typeECSV.push_back(TypeDataECSV::String);
+    if(resolvedfield(this->fieldsNotSave, parent, field))
+    {
+        block = new StructECSV;
+        if(parent != "") {block->splitPath(parent);}
+        if(field != "") {block->path.push_back(field);}
+        //if(type != "") {block->type.push_back(type);}
+        block->typeECSV.push_back(TypeDataECSV::String);
 
-    block->mtrx.init(1, 1);
-    block->mtrx.set(value, 0, 0);
-    this->modules.push_back(block);
+        block->mtrx.init(1, 1);
+        block->mtrx.set(value, 0, 0);
+        this->modules.push_back(block);
+    }
+
     return block;
 }
 
 StructECSV* DataECSV::addString(string& parent, const string& field, vector<string>& value)
 {
-    StructECSV* block = new StructECSV;
+    StructECSV* block = nullptr;
 
-    if(parent != "") {block->splitPath(parent);}
-    if(field != "") {block->path.push_back(field);}
-    //if(type != "") {block->type.push_back(type);}
-    block->typeECSV.push_back(TypeDataECSV::String);
+    if(resolvedfield(this->fieldsNotSave, parent, field))
+    {
+        block = new StructECSV;
+        if(parent != "") {block->splitPath(parent);}
+        if(field != "") {block->path.push_back(field);}
+        //if(type != "") {block->type.push_back(type);}
+        block->typeECSV.push_back(TypeDataECSV::String);
 
-    block->mtrx.pushRow(value);
-    this->modules.push_back(block);
+        block->mtrx.pushRow(value);
+        this->modules.push_back(block);
+    }
+
     return block;
 }
 
 StructECSV* DataECSV::addString(string& parent, const string& field, NArray<string>& value)
 {
-    StructECSV* block = new StructECSV;
+    StructECSV* block = nullptr;
 
-    if(parent != "") {block->splitPath(parent);}
-    if(field != "") {block->path.push_back(field);}
-    //if(type != "") {block->type.push_back(type);}
-    block->typeECSV.push_back(TypeDataECSV::String);
+    if(resolvedfield(this->fieldsNotSave, parent, field))
+    {
+        block = new StructECSV;
+        if(parent != "") {block->splitPath(parent);}
+        if(field != "") {block->path.push_back(field);}
+        //if(type != "") {block->type.push_back(type);}
+        block->typeECSV.push_back(TypeDataECSV::String);
 
-    block->mtrx.pushRow(value);
-    this->modules.push_back(block);
+        block->mtrx.pushRow(value);
+        this->modules.push_back(block);
+    }
+
     return block;
 }
 
 StructECSV* DataECSV::addString(string& parent, const string& field, NMatrix<string>& value)
 {
-    StructECSV* block = new StructECSV;
+    StructECSV* block = nullptr;
 
-    if(parent != "") {block->splitPath(parent);}
-    if(field != "") {block->path.push_back(field);}
-    //if(type != "") {block->type.push_back(type);}
-    block->typeECSV.push_back(TypeDataECSV::String);
+    if(resolvedfield(this->fieldsNotSave, parent, field))
+    {
+        block = new StructECSV;
+        if(parent != "") {block->splitPath(parent);}
+        if(field != "") {block->path.push_back(field);}
+        //if(type != "") {block->type.push_back(type);}
+        block->typeECSV.push_back(TypeDataECSV::String);
 
-    block->mtrx = value;
-    this->modules.push_back(block);
+        block->mtrx = value;
+        this->modules.push_back(block);
+    }
+
     return block;
 }
 

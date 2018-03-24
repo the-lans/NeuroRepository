@@ -60,8 +60,9 @@ public:
     void copyValue(NMatrix<NType>& obj); //Копирование значений
     void destruct(); //Деструктор
     void init(int lenRow, int lenColumn); //Инициализация
-    void init(int lenRow, int lenColumn, NType value); //Инициализация матрицы значением
-    void init_value(NType value); //Инициализация матрицы значением
+    void init(int lenRow, int lenColumn, const NType& value); //Инициализация матрицы значением
+    void init_value(const NType& value); //Инициализация матрицы значением
+    void init_rand(std::default_random_engine& generator, const NType& valMin, const NType& valMax); //Инициализация случайными числами
     void clear(); //Очистка
     void addRow(int pos); //Добавление в матрицу новой строки
     void addRow(int pos, const NType &value);
@@ -113,12 +114,13 @@ public:
 public:
     NMatrix<NType>& sum(NMatrix<NType>& B);
     NMatrix<NType>& sum(NMatrix<NType>& A, NMatrix<NType>& B);
-    NMatrix<NType>& valsum(NType& B);
+    NMatrix<NType>& valsum(const NType& B);
     NMatrix<NType>& mul(NArray<NType>& A, NArray<NType>& B);
     NMatrix<NType>& mul(NMatrix<NType>& B, bool orient);
     NMatrix<NType>& mul(NMatrix<NType>& A, NMatrix<NType>& B, bool orient);
     NMatrix<NType>& matmul(NMatrix<NType>& B);
-    NMatrix<NType>& valmul(NType& B);
+    NMatrix<NType>& valmul(const NType& B);
+    NMatrix<NType>& valsign();
 };
 
 
@@ -365,7 +367,7 @@ void NMatrix<NType>::init(int lenRow, int lenColumn)
 }
 
 template <typename NType>
-void NMatrix<NType>::init(int lenRow, int lenColumn, NType value)
+void NMatrix<NType>::init(int lenRow, int lenColumn, const NType& value)
 {
     if((lenRow > this->sizeRow)||(lenColumn > this->sizeColumn))
     {
@@ -379,11 +381,23 @@ void NMatrix<NType>::init(int lenRow, int lenColumn, NType value)
 }
 
 template <typename NType>
-void NMatrix<NType>::init_value(NType value)
+void NMatrix<NType>::init_value(const NType& value)
 {
     for(int i = 0; i < lenRow * lenColumn; i++)
     {
         data[i] = value;
+    }
+}
+
+template <typename NType>
+void NMatrix<NType>::init_rand(std::default_random_engine& generator, const NType& valMin, const NType& valMax)
+{
+    std::uniform_real_distribution<> distribution(valMin, valMax);
+    //NType koef = (valMax - valMin)/(NType)RAND_MAX;
+    for(int i = 0; i < lenRow * lenColumn; i++)
+    {
+        //data[i] = koef * (NType)rand() + valMin;
+        data[i] = distribution(generator);
     }
 }
 
@@ -995,7 +1009,7 @@ NMatrix<NType>& NMatrix<NType>::sum(NMatrix<NType>& A, NMatrix<NType>& B)
 }
 
 template <typename NType>
-NMatrix<NType>& NMatrix<NType>::valsum(NType& B)
+NMatrix<NType>& NMatrix<NType>::valsum(const NType& B)
 {
     int i, j;
     for(i = 0; i < lenRow; i++)
@@ -1166,7 +1180,7 @@ NMatrix<NType>& NMatrix<NType>::matmul(NMatrix<NType>& B)
 }
 
 template <typename NType>
-NMatrix<NType>& NMatrix<NType>::valmul(NType& B)
+NMatrix<NType>& NMatrix<NType>::valmul(const NType& B)
 {
     int i, j;
     for(i = 0; i < lenRow; i++)
@@ -1174,6 +1188,20 @@ NMatrix<NType>& NMatrix<NType>::valmul(NType& B)
         for(j = 0; j < lenColumn; j++)
         {
             data[i*sizeColumn + j] *= B;
+        }
+    }
+    return (*this);
+}
+
+template <typename NType>
+NMatrix<NType>& NMatrix<NType>::valsign()
+{
+    int i, j;
+    for(i = 0; i < lenRow; i++)
+    {
+        for(j = 0; j < lenColumn; j++)
+        {
+            data[i*sizeColumn + j] = -data[i*sizeColumn + j];
         }
     }
     return (*this);

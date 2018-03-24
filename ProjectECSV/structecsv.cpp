@@ -115,13 +115,14 @@ vector<string>& StructECSV::splitPath(string& str)
 bool StructECSV::isFieldObj(string& parent)
 {
     bool bl = true;
-    if(parent != "")
+    if((parent != "")&&(parent != "."))
     {
         vector<string> path_parent;
         split(path_parent, parent, ".");
         if(path_parent.size() > 0 && path_parent[0] == "") {path_parent.erase(path_parent.begin());}
         bl = (this->path.size() > path_parent.size());
         if(bl) {bl = this->cmpPath(path_parent, false);}
+        //cout << "isFieldObj=" << this->getPath() << " | " << parent << endl;
     }
     return bl;
 }
@@ -174,10 +175,16 @@ NArray<string>& StructECSV::getMatrixVector(NArray<string>& value)
     return value;
 }
 
-bool StructECSV::isField(string& parent, const string& field)
+bool StructECSV::isField(string parent, const string& field)
 {
-    if(parent[0] != '.') {parent = "" + parent;}
-    return this->getPath() == (parent + "." + field);
+    if(parent == ".")
+    {
+        return this->getPath() == ("." + field);
+    }
+    else
+    {
+        return this->getPath() == (parent + "." + field);
+    }
 }
 
 bool StructECSV::getFieldValue(string& parent, const string& field, NMatrix<string>& value)

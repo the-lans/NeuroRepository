@@ -1,18 +1,19 @@
-
 $[.base]
 
 $.base.val = 0.158000
 $Type = d
 
-$.base.color = 0; 2; 1; 2
+$.base.color
 $Type = i
 $Size = 4
+0; 2; 1; 2
 
 $[.base.sub]
 
-$.base.sub.vec = 123; 321; 753
+$.base.sub.vec
 $Type = i
 $Size = 3
+123; 321; 753
 
 $.base.sub.val_a = 12
 $Type = i
@@ -22,9 +23,10 @@ $Type = d
 
 $[.base.sub]
 
-$.base.sub.vec = 149; 859
+$.base.sub.vec
 $Type = i
 $Size = 2
+149; 859
 
 $.base.sub.val_a = 0
 $Type = i
@@ -34,9 +36,10 @@ $Type = d
 
 $[.base.sub]
 
-$.base.sub.vec = 872; 36; 98
+$.base.sub.vec
 $Type = i
 $Size = 3
+872; 36; 98
 
 $.base.sub.val_a = -8
 $Type = i

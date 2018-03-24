@@ -11,8 +11,10 @@ public:
     vector<StructECSV*> modules; //Блоки файла
     vector<size_t> indexModule; //Индексы блоков
     vector<long> indexString; //Индексы строк (указатели места)
+    vector<string>* fieldsNotSave; //Указатель на поля
 protected:
     size_t shift; //Указатель на смещение (текущий индекс модуля)
+    long indexSize; //Размер шапки файла. Определяется после чтения или записи шапки.
     string delim_data; //Разделитель данных
     bool array_br; //Выводить массив с новой строки?
 
@@ -22,6 +24,7 @@ public:
 public:
     void setShift(size_t ind);
     size_t getShift();
+    size_t getIndexSize();
     void setDelimData(string& delim);
     string getDelimData();
     void setArrayBR(bool bl);
@@ -35,26 +38,29 @@ public:
     bool isDataPath(StructECSV* block); //Данные могут расположиться в файле вместе с путём (одной строкой)?
     bool isNextBlock(size_t ind, string& parent); //Пока есть следующий блок
     void clear(); //Очистить всё
+    void clearData(); //Очистить данные
+    void clearIndex(); //Очистить индексы
     StructECSV* addDataMatrix(StructECSV* block, string& str); //Добавить строку данных в матрицу блока
     bool isOneMatrix(); //Блоки содержат одну матрицу? (Проверка на CSV файл)
-    void seek_back(ifstream& sm, long skback); //Перемещение указателя по отношению к началу файла
+    void seek_back(fstream& sm, long skback); //Перемещение указателя по отношению к началу файла
+    void shiftIndexString(fstream& index_file); //Добавление к индексу размера индексного файла
 
     bool read(string name); //Чтение данных из указанного файла
     bool write(string name); //Запись данных в указанный файл
-    void readBody(ifstream& in_file, long seekstop);
-    void writeBody(ofstream& out_file);
+    void readBody(fstream& in_file, long seekstop);
+    void writeBody(fstream& out_file);
     bool readHead(string name); //Чтение шапки файла
-    void readHead(ifstream& in_file);
+    void readHead(fstream& in_file);
     bool writeHead(string name); //Запись шапки файла
-    void writeHead(ofstream& out_file);
+    void writeHead(fstream& out_file);
     bool readObj(string name, size_t num); //Чтение объекта
-    void readObj(ifstream& in_file, size_t num);
+    void readObj(fstream& in_file, size_t num);
     bool appendObj(string name); //Запись в конец файла
-    void appendObj(ofstream& out_file);
-    void seekr(ifstream& in_file, size_t ind); //Позиционирование на заданный объект
-    void seekw(ofstream& out_file, bool seq); //Запись позиции текущего объекта
+    void appendObj(fstream& out_file);
+    void seekr(fstream& in_file, size_t ind); //Позиционирование на заданный объект
+    void seekw(fstream& out_file, bool seq); //Запись позиции текущего объекта
     bool unionHeadBody(string index_name, string body_name); //Объединение индексного файла и файла с данными
-    void unionHeadBody(ofstream& index_file, ifstream& body_file);
+    void unionHeadBody(fstream& index_file, fstream& body_file);
 
 public:
     StructECSV* addElement(string& parent, const string& field, string& value, string& type); //Добавление нового блока-элемента

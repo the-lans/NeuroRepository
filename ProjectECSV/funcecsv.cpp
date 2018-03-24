@@ -32,6 +32,75 @@ bool boolor(bool* mas, int n)
     return bl;
 }
 
+//Возвращает цельный путь
+string getpath(string parent, string& field, const char sym)
+{
+    if(parent[0] == sym) {parent = parent.substr(1);}
+    return parent + sym + field;
+}
+
+string getpath(string parent, const string& field, const char sym)
+{
+    if(parent[0] == sym) {parent = parent.substr(1);}
+    return parent + sym + field;
+}
+
+//Разрешённое поле
+bool resolvedfield(vector<string>* fieldsNotSave, string& parent, string& field)
+{
+    if(fieldsNotSave == nullptr) {return true;}
+    bool bl = true;
+
+    for(size_t ind = 0; bl && ind < fieldsNotSave->size(); ind++)
+    {
+        fieldsNotSave->at(ind);
+        bl = !cmppath(getpath(parent, field), fieldsNotSave->at(ind), false);
+    }
+
+    //return fieldsNotSave == nullptr || find(fieldsNotSave->begin(), fieldsNotSave->end(), getpath(parent, field)) != fieldsNotSave->end();
+    return bl;
+}
+
+bool resolvedfield(vector<string>* fieldsNotSave, string& parent, const string& field)
+{
+    if(fieldsNotSave == nullptr) {return true;}
+    bool bl = true;
+
+    for(size_t ind = 0; bl && ind < fieldsNotSave->size(); ind++)
+    {
+        fieldsNotSave->at(ind);
+        bl = !cmppath(getpath(parent, field), fieldsNotSave->at(ind), false);
+    }
+
+    //return fieldsNotSave == nullptr || find(fieldsNotSave->begin(), fieldsNotSave->end(), getpath(parent, field)) != fieldsNotSave->end();
+    return bl;
+}
+
+//Подстрока входит в строку
+bool cmppath(const string& str, const string& strsub, bool acc, const char* sym)
+{
+    vector<string> path, subpath;
+
+    split(path, str, sym);
+    split(subpath, strsub, sym);
+    if(path.size() > 0 && path[0] == "") {path.erase(path.begin());}
+    if(subpath.size() > 0 && subpath[0] == "") {subpath.erase(subpath.begin());}
+
+    return cmppath(path, subpath, acc);
+}
+
+bool cmppath(vector<string>& path, vector<string>& subpath, bool acc)
+{
+    bool bl = (!acc || path.size() == subpath.size());
+
+    for(size_t i = 0; bl == true && i < subpath.size(); i++)
+    {
+        if(subpath[i] != path[i]) {bl = false;}
+    }
+
+    return bl;
+}
+
 //Сравнение с символом экранирования
 bool cmpstrslash(const string& str, size_t ind1, size_t ind2)
 {
@@ -100,7 +169,7 @@ void concat(string& str, vector<string>& dest, const char* delim)
         str.append(delim);
     }
     size_t len_delim = strlen(delim);
-    str.erase(str.length()-len_delim, len_delim);
+    if(str.length() > len_delim) {str.erase(str.length()-len_delim, len_delim);}
 }
 
 //Сбор строки из подстрок
@@ -113,7 +182,7 @@ void concat(string& str, string* dest, int len, const char* delim)
         str.append(delim);
     }
     size_t len_delim = strlen(delim);
-    str.erase(str.length()-len_delim, len_delim);
+    if(str.length() > len_delim) {str.erase(str.length()-len_delim, len_delim);}
 }
 
 //Удаление концевых пробелов
