@@ -1,0 +1,31 @@
+$.typeLay = SoftStep; SoftStep //Структура нейросети: Типы слоёв
+$.lenNeurons = 3; 2; 1 //Структура нейросети: Количество нейронов
+$.koefLay = 1.0; 1.0 //Структура нейросети: Коэффициенты слоя
+$.valueWeight = 0.50 //Структура нейросети: параметр инициализации весов
+$.typeInit = InitG //Структура нейросети: тип инициализации
+$.typeTarget = MSE //Вид целевой функции
+
+$[.lay]
+$.lay.weigth
+-0.9; 0.9
+1.9; -1.9
+-0.9; 0.9
+
+$.lay.bias
+0.4; -0.4
+
+$.lay.koef = 1.0
+$.lay.type = SoftStep
+$.lay.typeDerivat = Out
+
+$[.lay]
+$.lay.weigth
+-2.6
+2.4
+
+$.lay.bias
+0.0
+
+$.lay.koef = 1.0
+$.lay.type = SoftStep
+$.lay.typeDerivat = Out

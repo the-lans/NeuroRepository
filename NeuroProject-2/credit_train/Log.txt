@@ -1,0 +1,63 @@
+Train
+Energy = 0.134474
+EnergySum = 1.15734
+EnergyRegularization = 0.735
+
+Time = 0.073
+Epoches = 5000
+StabEnergy = 1
+ChangeEnergy = 0.000186874
+Energy = 0.017665
+EnergySum = 0.0199714
+EnergyRegularization = 11.5641
+
+Test
+Energy = 0
+EnergySum = 0
+EnergyRegularization = 11.5641
+
+Validate
+Energy = 0
+EnergySum = 0
+EnergyRegularization = 11.5641
+
+pos = 1
+out = 0.000000
+outrun = 0.115812
+outpost = 0.000000
+
+pos = 2
+out = 1.000000
+outrun = 0.900988
+outpost = 1.000000
+
+pos = 3
+out = 0.000000
+outrun = 0.006243
+outpost = 0.000000
+
+pos = 4
+out = 0.000000
+outrun = 0.010068
+outpost = 0.000000
+
+pos = 5
+out = 1.000000
+outrun = 0.900810
+outpost = 1.000000
+
+pos = 6
+out = 1.000000
+outrun = 0.986765
+outpost = 1.000000
+
+pos = 7
+out = 0.000000
+outrun = 0.010062
+outpost = 0.000000
+
+pos = 8
+out = 0.000000
+outrun = 0.080445
+outpost = 0.000000
+

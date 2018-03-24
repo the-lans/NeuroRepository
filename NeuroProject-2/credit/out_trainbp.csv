@@ -1,0 +1,85 @@
+$.speedLearningInit = 1.000000
+$Type = f
+
+$.koefIncEnergy = 1.000000
+$Type = f
+
+$.decSpeedLearning = 1.000000
+$Type = f
+
+$.incSpeedLearning = 1.000000
+$Type = f
+
+$.speedRegularization = 0.000000
+$Type = f
+
+$.inertia = 0.000000
+$Type = f
+
+$.maxEpoches = 0
+$Type = i
+
+$.minError = 0.000000
+$Type = f
+
+$.minErrorChange = 0.000000
+$Type = f
+
+$.stepReg = 0
+$Type = i
+
+$.mixtrain = false
+$Type = b
+
+$.mixtest = false
+$Type = b
+
+$.blState = false
+$Type = b
+
+$.minErrorTest = 0.000000
+$Type = f
+
+$.blErrorTest = false
+$Type = b
+
+$.epoches = 0
+$Type = i
+
+$.stabEnergy = 0
+$Type = i
+
+$.changeEnergy = 0.000000
+$Type = f
+
+$.energyAver
+$Type = f
+
+
+$.energyMax
+$Type = f
+
+
+$.energyTestAver
+$Type = f
+
+
+$.energyTestMax
+$Type = f
+
+
+$.speedLearningHistory
+$Type = f
+
+
+$.state
+$Type = f
+
+$.stepExmTime = 1
+$Type = i
+
+$.countTime = 1
+$Type = i
+
+$.clearNet = true
+$Type = b

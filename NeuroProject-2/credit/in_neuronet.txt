@@ -1,0 +1,29 @@
+$.typeLay = Step; Step //Структура нейросети: Типы слоёв
+$.lenNeurons = 3; 2; 1 //Структура нейросети: Количество нейронов
+$.koefLay = 0.5; 0.5 //Структура нейросети: Коэффициенты слоя
+$.typeTarget = MSE //Вид целевой функции
+
+$[.lay]
+$.lay.weigth
+0.25; 0.5
+0.25; -0.4
+0; 0.9
+
+$.lay.bias
+0.0; 0.0
+
+$.lay.koef = 0.5
+$.lay.type = Step
+$.lay.typeDerivat = Sum
+
+$[.lay]
+$.lay.weigth
+-1 
+1
+
+$.lay.bias
+0.0
+
+$.lay.koef = 0.5
+$.lay.type = Step
+$.lay.typeDerivat = Sum

@@ -1,0 +1,66 @@
+$.typeLay = Linear
+$Type = i
+
+$.lenNeurons
+$Type = i
+$Size = 2
+2; 1
+
+$.koefLay = 1.000000
+$Type = f
+
+$.valueWeight = 0.500000
+$Type = f
+
+$.energyRegularization = 1.000003
+$Type = f
+
+$.shiftout = 0
+$Type = i
+
+$.typeInit = InitG
+$Type = i
+
+$.lock = 0
+$Type = b
+
+$.blLock = false
+$Type = b
+
+$.typeTarget = MSE
+$Type = i
+
+$[.lay]
+
+$.lay.weigth
+$Type = f
+$Size = 1; 2
+1.000002
+1.000001
+
+$.lay.bias = -0.000042
+$Type = f
+
+$.lay.output = 12.999976
+$Type = f
+
+$.lay.sum = 12.999976
+$Type = f
+
+$.lay.typeNeurons = Linear
+$Type = f
+
+$.lay.koefNeurons = 1.000000
+$Type = f
+
+$.lay.koef = 1.000000
+$Type = f
+
+$.lay.energyRegularization = 1.000003
+$Type = f
+
+$.lay.type = Linear
+$Type = i
+
+$.lay.typeDerivat = Out
+$Type = i

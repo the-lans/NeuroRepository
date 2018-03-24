@@ -1,0 +1,166 @@
+$.typeLay
+$Type = i
+$Size = 3
+Tanh; Tanh; Linear
+
+$.lenNeurons
+$Type = i
+$Size = 4
+2; 4; 4; 1
+
+$.koefLay
+$Type = f
+$Size = 3
+1.000000; 1.000000; 1.000000
+
+$.valueWeight = 0.500000
+$Type = f
+
+$.energyRegularization = 12.676592
+$Type = f
+
+$.shiftout = 0
+$Type = i
+
+$.typeInit = InitG
+$Type = i
+
+$.lock
+$Type = b
+$Size = 9
+0; 0; 0; 0; 0; 0; 0; 0; 0
+
+$.blLock = false
+$Type = b
+
+$.typeTarget = MSE
+$Type = i
+
+$[.lay]
+
+$.lay.weigth
+$Type = f
+$Size = 4; 2
+-0.352258; 0.941490; 0.110456; 0.400625
+1.344390; 0.550577; 0.457538; -1.121152
+
+$.lay.bias
+$Type = f
+$Size = 4
+0.691065; -0.175099; 0.544112; -0.465829
+
+$.lay.output
+$Type = f
+$Size = 4
+0.670049; -0.458338; 0.467258; -0.538501
+
+$.lay.sum
+$Type = f
+$Size = 4
+0.810833; -0.495206; 0.506557; -0.602041
+
+$.lay.typeNeurons
+$Type = f
+$Size = 4
+Tanh; Tanh; Tanh; Tanh
+
+$.lay.koefNeurons
+$Type = f
+$Size = 4
+1.000000; 1.000000; 1.000000; 1.000000
+
+$.lay.koef = 1.000000
+$Type = f
+
+$.lay.energyRegularization = 2.380016
+$Type = f
+
+$.lay.type = Tanh
+$Type = i
+
+$.lay.typeDerivat = Out
+$Type = i
+
+$[.lay]
+
+$.lay.weigth
+$Type = f
+$Size = 4; 4
+-0.198283; -0.443170; -0.729394; 1.372422
+-0.090119; -0.978818; 0.064933; 0.232248
+-0.181871; 0.129112; -0.430130; 0.432583
+0.042238; 0.056218; 0.364214; -1.070971
+
+$.lay.bias
+$Type = f
+$Size = 4
+1.240441; 0.859521; 0.440950; 0.281783
+
+$.lay.output
+$Type = f
+$Size = 4
+0.778346; 0.778385; -0.441950; 0.953935
+
+$.lay.sum
+$Type = f
+$Size = 4
+1.041161; 1.041260; -0.474652; 1.873772
+
+$.lay.typeNeurons
+$Type = f
+$Size = 4
+Tanh; Tanh; Tanh; Tanh
+
+$.lay.koefNeurons
+$Type = f
+$Size = 4
+1.000000; 1.000000; 1.000000; 1.000000
+
+$.lay.koef = 1.000000
+$Type = f
+
+$.lay.energyRegularization = 2.691048
+$Type = f
+
+$.lay.type = Tanh
+$Type = i
+
+$.lay.typeDerivat = Out
+$Type = i
+
+$[.lay]
+
+$.lay.weigth
+$Type = f
+$Size = 1; 4
+2.284723
+2.162394
+1.460057
+-1.784204
+
+$.lay.bias = 1.967042
+$Type = f
+
+$.lay.output = 3.081235
+$Type = f
+
+$.lay.sum = 3.081235
+$Type = f
+
+$.lay.typeNeurons = Linear
+$Type = f
+
+$.lay.koefNeurons = 1.000000
+$Type = f
+
+$.lay.koef = 1.000000
+$Type = f
+
+$.lay.energyRegularization = 7.605528
+$Type = f
+
+$.lay.type = Linear
+$Type = i
+
+$.lay.typeDerivat = Out
+$Type = i

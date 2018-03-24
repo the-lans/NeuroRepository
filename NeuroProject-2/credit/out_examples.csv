@@ -1,0 +1,113 @@
+$.beginset = 0
+$Type = i
+
+$.testset = 0
+$Type = i
+
+$.validset = 0
+$Type = i
+
+$.endset = 8
+$Type = i
+
+$.limitset = 100
+$Type = i
+
+$.lenIn = 3
+$Type = i
+
+$.lenOut = 1
+$Type = i
+
+$.blClass = true
+$Type = b
+
+$.blFilter = true
+$Type = b
+
+$.valFilter = 0.900000
+$Type = f
+
+$.typeNormIn = None
+$Type = i
+
+$.typeNormOut = None
+$Type = i
+
+$.inMin = 0.000000
+$Type = f
+
+$.inMax = 1.000000
+$Type = f
+
+$.outMin = 0.000000
+$Type = f
+
+$.outMax = 1.000000
+$Type = f
+
+$.inKoef = 1.000000
+$Type = f
+
+$.outKoef = 1.000000
+$Type = f
+
+$.lenRand = 0
+$Type = i
+
+$.energyAver = 0.153093
+$Type = f
+
+$.energyMax = 0.707107
+$Type = f
+
+$.energySum = 1.500000
+$Type = f
+
+$.data.input
+$Type = f
+$Size = 3; 8
+0.000000; 0.000000; 0.000000
+0.000000; 0.000000; 1.000000
+0.000000; 1.000000; 0.000000
+0.000000; 1.000000; 1.000000
+1.000000; 0.000000; 0.000000
+1.000000; 0.000000; 1.000000
+1.000000; 1.000000; 0.000000
+1.000000; 1.000000; 1.000000
+
+$.data.output
+$Type = f
+$Size = 1; 8
+0.000000
+0.000000
+0.000000
+0.000000
+0.000000
+0.000000
+0.000000
+0.000000
+
+$.data.outrun
+$Type = f
+$Size = 1; 8
+0.000000
+1.000000
+0.000000
+0.000000
+1.000000
+1.000000
+0.000000
+0.000000
+
+$.data.outpostrun
+$Type = f
+$Size = 1; 8
+0.000000
+1.000000
+0.000000
+0.000000
+1.000000
+1.000000
+0.000000
+0.000000

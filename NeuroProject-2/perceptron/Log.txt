@@ -1,0 +1,176 @@
+Train
+Energy = 1.86715
+EnergySum = 1394.49
+EnergyMax = 21.4182
+EnergyRegularization = 0.245
+
+Time = 0.004
+Epoches = 179
+StabEnergy = 1
+ChangeEnergy = 3.4595e-07
+Energy = 5.5419e-06
+EnergySum = 1.22851e-08
+EnergyMax = 3.11899e-05
+EnergyRegularization = 1
+
+Test
+Energy = 0
+EnergySum = 0
+EnergyMax = 0
+EnergyRegularization = 1
+
+Validate
+Energy = 5.81978e-06
+EnergySum = 3.38699e-09
+EnergyMax = 2.81541e-05
+EnergyRegularization = 1
+
+pos = 1
+out = 1.000000
+outrun = 0.999959
+outpost = 0.999959
+
+pos = 2
+out = 1.000000
+outrun = 0.999960
+outpost = 0.999960
+
+pos = 3
+out = 20.000000
+outrun = 19.999985
+outpost = 19.999985
+
+pos = 4
+out = 20.000000
+outrun = 19.999987
+outpost = 19.999987
+
+pos = 5
+out = 0.000000
+outrun = -0.000044
+outpost = -0.000044
+
+pos = 6
+out = 0.000000
+outrun = -0.000039
+outpost = -0.000039
+
+pos = 7
+out = 3.000000
+outrun = 2.999961
+outpost = 2.999961
+
+pos = 8
+out = 3.000000
+outrun = 2.999964
+outpost = 2.999964
+
+pos = 9
+out = 2.000000
+outrun = 1.999963
+outpost = 1.999963
+
+pos = 10
+out = 2.000000
+outrun = 1.999959
+outpost = 1.999959
+
+pos = 11
+out = 7.500000
+outrun = 7.499968
+outpost = 7.499968
+
+pos = 12
+out = 7.500000
+outrun = 7.499969
+outpost = 7.499969
+
+pos = 13
+out = 5.000000
+outrun = 4.999965
+outpost = 4.999965
+
+pos = 14
+out = 5.000000
+outrun = 4.999965
+outpost = 4.999965
+
+pos = 15
+out = 6.000000
+outrun = 5.999967
+outpost = 5.999967
+
+pos = 16
+out = 6.000000
+outrun = 5.999966
+outpost = 5.999966
+
+pos = 17
+out = 8.000000
+outrun = 7.999968
+outpost = 7.999968
+
+pos = 18
+out = 8.000000
+outrun = 7.999970
+outpost = 7.999970
+
+pos = 19
+out = 3.000000
+outrun = 2.999962
+outpost = 2.999962
+
+pos = 20
+out = 3.000000
+outrun = 2.999963
+outpost = 2.999963
+
+pos = 21
+out = 20.000000
+outrun = 19.999985
+outpost = 19.999985
+
+pos = 22
+out = 20.000000
+outrun = 19.999987
+outpost = 19.999987
+
+pos = 23
+out = 14.500000
+outrun = 14.499978
+outpost = 14.499978
+
+pos = 24
+out = 14.500000
+outrun = 14.499978
+outpost = 14.499978
+
+pos = 25
+out = 11.000000
+outrun = 10.999971
+outpost = 10.999971
+
+pos = 26
+out = 11.000000
+outrun = 10.999975
+outpost = 10.999975
+
+pos = 27
+out = 3.000000
+outrun = 2.999965
+outpost = 2.999965
+
+pos = 28
+out = 3.000000
+outrun = 2.999960
+outpost = 2.999960
+
+pos = 29
+out = 13.000000
+outrun = 12.999976
+outpost = 12.999976
+
+pos = 30
+out = 13.000000
+outrun = 12.999976
+outpost = 12.999976

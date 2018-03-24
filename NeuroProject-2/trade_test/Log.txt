@@ -1,0 +1,28 @@
+trade_test
+
+Train
+Energy = 0.16956
+EnergySum = 4.14007
+EnergyMax = 1.05006
+EnergyRegularization = 5.145
+
+Time = 56.562
+Epoches = 15000
+StabEnergy = 1
+ChangeEnergy = 6.46498e-07
+Energy = 0.000202489
+EnergySum = 5.90424e-06
+EnergyMax = 0.00206823
+EnergyRegularization = 2.37587
+
+Test
+Energy = 0.281746
+EnergySum = 0.714426
+EnergyMax = 0.778821
+EnergyRegularization = 2.37587
+
+Validate
+Energy = 0
+EnergySum = 0
+EnergyMax = 0
+EnergyRegularization = 2.37587

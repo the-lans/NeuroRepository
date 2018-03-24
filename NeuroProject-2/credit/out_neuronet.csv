@@ -1,0 +1,118 @@
+$.typeLay
+$Type = i
+$Size = 2
+Step; Step
+
+$.lenNeurons
+$Type = i
+$Size = 3
+3; 2; 1
+
+$.koefLay
+$Type = f
+$Size = 2
+0.500000; 0.500000
+
+$.valueWeight = 0.000000
+$Type = f
+
+$.energyRegularization = 1.672500
+$Type = f
+
+$.shiftout = 0
+$Type = i
+
+$.typeInit = InitNone
+$Type = i
+
+$.lock
+$Type = b
+$Size = 3
+0; 0; 0
+
+$.blLock = false
+$Type = b
+
+$.typeTarget = MSE
+$Type = i
+
+$[.lay]
+
+$.lay.weigth
+$Type = f
+$Size = 2; 3
+0.250000; 0.500000
+0.250000; -0.400000
+0.000000; 0.900000
+
+$.lay.bias
+$Type = f
+$Size = 2
+0.000000; 0.000000
+
+$.lay.output
+$Type = f
+$Size = 2
+1.000000; 1.000000
+
+$.lay.sum
+$Type = f
+$Size = 2
+0.500000; 1.000000
+
+$.lay.typeNeurons
+$Type = f
+$Size = 2
+Step; Step
+
+$.lay.koefNeurons
+$Type = f
+$Size = 2
+0.500000; 0.500000
+
+$.lay.koef = 0.500000
+$Type = f
+
+$.lay.energyRegularization = 0.672500
+$Type = f
+
+$.lay.type = Step
+$Type = i
+
+$.lay.typeDerivat = Sum
+$Type = i
+
+$[.lay]
+
+$.lay.weigth
+$Type = f
+$Size = 1; 2
+-1.000000
+1.000000
+
+$.lay.bias = 0.000000
+$Type = f
+
+$.lay.output = 0.000000
+$Type = f
+
+$.lay.sum = 0.000000
+$Type = f
+
+$.lay.typeNeurons = Step
+$Type = f
+
+$.lay.koefNeurons = 0.500000
+$Type = f
+
+$.lay.koef = 0.500000
+$Type = f
+
+$.lay.energyRegularization = 1.000000
+$Type = f
+
+$.lay.type = Step
+$Type = i
+
+$.lay.typeDerivat = Sum
+$Type = i
