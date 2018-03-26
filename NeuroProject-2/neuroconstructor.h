@@ -168,6 +168,7 @@ template <typename NType>
 void NeuroConstructor<NType>::train()
 {
     start_time = clock(); //Начальное время
+
     //Процесс обучения
     if(this->bp->getCountTime() > 1)
     {
@@ -175,11 +176,14 @@ void NeuroConstructor<NType>::train()
     }
     else
     {
+        if(this->bp->getMixTest()) {this->net->examples->mixTest();}
+        this->net->examples->initTypeSet();
         this->bp->train();
     }
+    this->net->funcRegularization();
+
     end_time = clock(); //Конечное время
     search_time = deltatime(start_time, end_time); //Искомое время
-    this->net->funcRegularization();
 }
 
 #endif // NEUROCONSTRUCTOR_H

@@ -265,8 +265,9 @@ void DataECSV::writeBody(fstream& out_file)
     out_file.seekp(0, ios_base::end);
     long fsize = out_file.tellp();
     if(fsize > 0) {out_file << endl;}
+    size_t num = this->modules.size();
 
-    for(size_t index = 0; index < this->modules.size(); index++)
+    for(size_t index = 0; index < num; index++)
     {
         block = this->modules[index];
         blData = false;
@@ -322,7 +323,7 @@ void DataECSV::writeBody(fstream& out_file)
             out_file << str;
         }
 
-        if(index < this->modules.size()-1) {out_file << endl;}
+        if(index < num-1) {out_file << endl;}
     }
 }
 

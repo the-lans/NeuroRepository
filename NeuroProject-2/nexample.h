@@ -18,12 +18,16 @@ public:
     NArray<NType> output; //Выходной эталонный вектор
     NArray<NType> outrun; //Выходной расчётный вектор
     NArray<NType> outpostrun; //Выходной вектор после постобработки
+    NArray<int> outputNumClass; //Номер класса
 protected:
     NSetType typeSet; //Тип примера
+    bool usage; //Использование примера
     NType energy; //Энергия примера - разница между расчётным и эталонным вектором
 public:
     void setTypeSet(NSetType st);
     NSetType getTypeSet();
+    void setUsage(bool param);
+    bool getUsage();
     void setEnergy(NType energy);
     NType getEnergy();
 public:
@@ -39,13 +43,17 @@ template <typename NType>
 NExample<NType>::NExample()
 {
     this->energy = 0;
+    this->typeSet = NSetType::NSetNone;
+    this->usage = true;
 }
 
 template <typename NType>
 NExample<NType>::NExample(NExample<NType>& obj):
-    input(obj.input), output(obj.output), outrun(obj.outrun), outpostrun(obj.outpostrun)
+    input(obj.input), output(obj.output), outrun(obj.outrun), outpostrun(obj.outpostrun), outputNumClass(obj.outputNumClass)
 {
     this->energy = obj.getEnergy();
+    this->typeSet = obj.getTypeSet();
+    this->usage = obj.getUsage();
 }
 
 template <typename NType>
@@ -67,6 +75,18 @@ NSetType NExample<NType>::getTypeSet()
 }
 
 template <typename NType>
+void NExample<NType>::setUsage(bool param)
+{
+    this->usage = param;
+}
+
+template <typename NType>
+bool NExample<NType>::getUsage()
+{
+    return this->usage;
+}
+
+template <typename NType>
 void NExample<NType>::setEnergy(NType energy)
 {
     this->energy = energy;
@@ -78,6 +98,7 @@ NType NExample<NType>::getEnergy()
     return this->energy;
 }
 
+
 template <typename NType>
 void NExample<NType>::deinit()
 {
@@ -85,6 +106,11 @@ void NExample<NType>::deinit()
     this->output.clear();
     this->outrun.clear();
     this->outpostrun.clear();
+    this->outputNumClass.clear();
+
+    this->energy = 0;
+    this->typeSet = NSetType::NSetNone;
+    this->usage = true;
 }
 
 template <typename NType>
@@ -94,6 +120,7 @@ void NExample<NType>::init(int lenIn, int lenOut, NType value)
     this->output.init(lenOut, value);
     this->outrun.init(lenOut, value);
     this->outpostrun.clear();
+    this->outputNumClass.clear();
 }
 
 template <typename NType>
@@ -108,6 +135,7 @@ void NExample<NType>::saveECSV(DataECSV& dt, string& parent)
     to_array_string(str_vec, this->output); dt.addElement(parent, "output", str_vec, typeid(NType).name());
     to_array_string(str_vec, this->outrun); dt.addElement(parent, "outrun", str_vec, typeid(NType).name());
     to_array_string(str_vec, this->outpostrun); dt.addElement(parent, "outpostrun", str_vec, typeid(NType).name());
+    to_array_string(str_vec, this->outputNumClass); dt.addElement(parent, "outputNumClass", str_vec, typeid(int).name());
     str_val = to_string(this->energy); dt.addElement(parent, "energy", str_val, typeid(NType).name());
 }
 
@@ -135,11 +163,12 @@ void NExample<NType>::loadECSV(DataECSV& dt, string& parent)
         while(dt.isNextBlock(ind, parent))
         {
             iter = dt.modules[ind];
-            if(iter->getFieldValue(parent, "input", str_vec)) {to_array_value(this->input, str_vec);}
-            if(iter->getFieldValue(parent, "output", str_vec)) {to_array_value(this->output, str_vec);}
-            if(iter->getFieldValue(parent, "outrun", str_vec)) {to_array_value(this->outrun, str_vec);}
-            if(iter->getFieldValue(parent, "outpostrun", str_vec)) {to_array_value(this->outpostrun, str_vec);}
-            if(iter->getFieldValue(parent, "energy", str_val)) {to_value(this->energy, str_val);}
+                 if(iter->getFieldValue(parent, "input", str_vec)) {to_array_value(this->input, str_vec);}
+            else if(iter->getFieldValue(parent, "output", str_vec)) {to_array_value(this->output, str_vec);}
+            else if(iter->getFieldValue(parent, "outrun", str_vec)) {to_array_value(this->outrun, str_vec);}
+            else if(iter->getFieldValue(parent, "outpostrun", str_vec)) {to_array_value(this->outpostrun, str_vec);}
+            else if(iter->getFieldValue(parent, "outputNumClass", str_vec)) {to_array_value(this->outputNumClass, str_vec);}
+            else if(iter->getFieldValue(parent, "energy", str_val)) {to_value(this->energy, str_val);}
             ind++;
         }
 

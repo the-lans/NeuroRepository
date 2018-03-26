@@ -58,7 +58,7 @@
       </item>
       <item>
        <property name="text">
-        <string>Trade</string>
+        <string>Trade High/Low</string>
        </property>
       </item>
      </widget>

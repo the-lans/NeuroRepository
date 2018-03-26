@@ -68,6 +68,7 @@ private:
     INLayer<NType>** pChangeLay; //changeNet.lay
     NType* pOutrun; //exm.outrun
     int lenLay; //net.lay - Количество слоёв
+    int pos; //Счётчик примеров
 
 public:
     void setSpeedLearningInit(NType param);
@@ -425,7 +426,6 @@ void TrainBP<NType>::deinit()
 template <typename NType>
 void TrainBP<NType>::train()
 {
-    int pos;
     NExample<NType>* exm;
     NType prevEnrg = 0, curEnrg = 0, curEnrgTest = 0;
     bool isPoint;
@@ -433,10 +433,15 @@ void TrainBP<NType>::train()
     int beginset = this->net->examples->getBeginset();
     int testset = this->net->examples->getTestset();
 
+    //Прореживание примеров
+    this->net->examples->initUsage(NSetType::NSetTrain);
+    this->net->examples->thinnigExamples(this->net->getShiftout());
+
+    //Начальные данные
     this->speedLearning = this->speedLearningInit;
     this->koefTrain = this->speedLearning * (1 - this->inertia);
     this->koefInert = this->speedLearning * this->inertia;
-    this->koefRegular = - (this->speedRegularization * this->koefTrain) / (testset - beginset);
+    this->koefRegular = - (this->speedRegularization * this->koefTrain) / this->net->examples->getLenExamples(NSetType::NSetTrain);
     this->pLay = this->net->lay.getData();
     this->pExam = this->net->examples->getData();
     this->pMas = this->errorNet.getData();
@@ -458,6 +463,7 @@ void TrainBP<NType>::train()
 
     if(this->stepReg != 0) {this->makePoint();}
 
+    //Цикл обучения
     while(this->epoches < this->maxEpoches
           && curEnrg > this->minError
           && (!this->blErrorTest || curEnrgTest > this->minErrorTest)
@@ -468,7 +474,12 @@ void TrainBP<NType>::train()
             && (!this->blErrorTest || curEnrgTest > this->minErrorTest)
             && this->changeEnergy >= this->minErrorChange)
         {
-            if(this->mixtrain) {this->net->examples->mixTrain();}
+            if(this->mixtrain)
+            {
+                this->net->examples->mixTrain();
+                this->net->examples->initUsage(NSetType::NSetTrain);
+                this->net->examples->thinnigExamples(this->net->getShiftout()); //Прореживание примеров
+            }
 
             if(blDropout)
             {
@@ -477,11 +488,14 @@ void TrainBP<NType>::train()
                 {
                     exm = this->pExam[pos];
                     //cout << "Primer: " << pos << "\n"; //Тест
-                    this->net->runExampleDropout(exm);
-                    calculateError(exm);
-                    change(exm);
-                    if(blLock) {doMaskLock();}
-                    update();
+                    if(exm->getUsage())
+                    {
+                        this->net->runExampleDropout(exm);
+                        calculateError(exm);
+                        change(exm);
+                        if(blLock) {doMaskLock();}
+                        update();
+                    }
                 }
             }
             else
@@ -490,11 +504,15 @@ void TrainBP<NType>::train()
                 {
                     exm = this->pExam[pos];
                     //cout << "Primer: " << pos << "\n"; //Тест
-                    this->net->runExample(exm);
-                    calculateError(exm);
-                    change(exm);
-                    if(blLock) {doMaskLock();}
-                    update();
+                    if(exm->getUsage())
+                    {
+                        this->net->runExample(exm);
+                        //cout << "Energy: " << exm->getEnergy() << "\n"; //Тест
+                        calculateError(exm);
+                        change(exm);
+                        if(blLock) {doMaskLock();}
+                        update();
+                    }
                 }
             }
 
@@ -512,7 +530,7 @@ void TrainBP<NType>::train()
             if(this->speedLearning > this->speedLearningMax) {this->speedLearning = this->speedLearningMax;}
             this->koefTrain = this->speedLearning * (1 - this->inertia);
             this->koefInert = this->speedLearning * this->inertia;
-            this->koefRegular = - (this->speedRegularization * this->koefTrain)/ (testset - beginset);
+            this->koefRegular = - (this->speedRegularization * this->koefTrain) / this->net->examples->getLenExamples(NSetType::NSetTrain);
             prevEnrg = curEnrg;
 
             if(this->blErrorTest)
@@ -559,6 +577,7 @@ void TrainBP<NType>::trainTime()
     //this->net->examples->update();
     if(this->mixtest) {this->net->examples->mixTest();}
     this->net->examples->initTypeSet();
+    this->fieldsDB();
 
     for(int tm = 0; tm < this->countTime; tm++)
     {
@@ -573,10 +592,12 @@ void TrainBP<NType>::trainTime()
 
         this->train();
 
-        this->net->examples->recovery();
+        this->net->runExamples(NSetType::NSetValidate);
+        //if(!this->net->examples->getBlOriginal()) {this->net->examples->recovery();}
         this->net->examples->postrun();
+        this->net->examples->runEnergyClass(NSetType::NSetTrain);
 
-        if(tm == 1) {this->fieldsDB();}
+        //if(tm == 1) {this->fieldsDB();}
         this->appendDB();
 
         this->net->examples->doShift(this->stepExmTime, this->blShift);
@@ -596,8 +617,17 @@ void TrainBP<NType>::calculateError(NExample<NType>* exm)
 {
     int k;
 
+    //Тест
+    /*NArray<NType>* outtst;
+    outtst = &this->net->lay[0]->output; cout << "outrun=" << outtst->get(0) << ", " << outtst->get(1) << ", " << outtst->get(2) << "\n";
+    outtst = &this->net->lay[1]->output; cout << "outrun=" << outtst->get(0) << ", " << outtst->get(1) << ", " << outtst->get(2) << "\n";
+    outtst = &this->net->lay[2]->output; cout << "outrun=" << outtst->get(0) << ", " << outtst->get(1) << ", " << outtst->get(2) << "\n";
+    outtst = &this->net->lay[0]->sum; cout << "sum=" << outtst->get(0) << ", " << outtst->get(1) << ", " << outtst->get(2) << "\n";
+    outtst = &this->net->lay[1]->sum; cout << "sum=" << outtst->get(0) << ", " << outtst->get(1) << ", " << outtst->get(2) << "\n";
+    outtst = &this->net->lay[2]->sum; cout << "sum=" << outtst->get(0) << ", " << outtst->get(1) << ", " << outtst->get(2) << "\n";*/
+    //cout << "outrun=" << exm->outrun.get(0) << ", " << exm->outrun.get(1) << ", " << exm->outrun.get(2) << "\n";}
+
     // Выходной слой
-    //cout << "outrun=" << exm->outrun.get(0) << "\n"; //Тест
     NArray<NType>& er = this->net->derivEnergy(exm);
 
     k = lenLay-1;
@@ -605,7 +635,7 @@ void TrainBP<NType>::calculateError(NExample<NType>* exm)
     NArray<NType>* outlay = this->net->derivActivLay(exm);
     if(outlay != nullptr) {pMas[k]->mul(*outlay);}
     pMas[k]->mul(er);
-    //cout << "d=" << pMas[k]->get(0) << "\n"; //Тест
+    //cout << "d=" << pMas[k]->get(0) << ", " << pMas[k]->get(1) << ", " << pMas[k]->get(2) << "\n"; //Тест
 
     // Скрытый слой
     for(k = lenLay-2; k >= 0; k--)
@@ -697,6 +727,9 @@ void TrainBP<NType>::update()
 {
     for(int k = 0; k < this->net->lay.getLength(); k++)
     {
+        pLay[k]->weigth.sum(pChangeLay[k]->weigth);
+        pLay[k]->bias.sum(pChangeLay[k]->bias);
+
         //Тест
         /*NType valuew, valueb;
         for(int j = 0; j < pChangeLay[k]->weigth.getLenColumn(); j++)
@@ -704,14 +737,11 @@ void TrainBP<NType>::update()
             for(int i = 0; i < pChangeLay[k]->weigth.getLenRow(); i++)
             {
                 valuew = pChangeLay[k]->weigth.get(i, j);
-                cout << i << ", " << j << " = " << valuew << "\n";
+                if(isnan(valuew)) {cout << i << ", " << j << " = " << valuew << "\n";}
             }
             valueb = pChangeLay[k]->bias.get(j);
-            cout << j << " = " << valueb << "\n";
+            if(isnan(valueb)) {cout << j << " = " << valueb << "\n";}
         }*/
-
-        pLay[k]->weigth.sum(pChangeLay[k]->weigth);
-        pLay[k]->bias.sum(pChangeLay[k]->bias);
     }
 }
 

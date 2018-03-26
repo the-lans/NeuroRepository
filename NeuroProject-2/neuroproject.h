@@ -74,6 +74,7 @@ enum NError
 #define NFUNC_SQR(arg) ((arg)*(arg))
 #define NFUNC_SQRT(arg) sqrtf(arg)
 #define NFUNC_EXP(arg) expf(arg)
+#define NFUNC_EXP87 6.07603E37
 #define NFUNC_LN(arg) logf(arg)
 #define NFUNC_SIN(arg) sinf(arg)
 #define NFUNC_COS(arg) cosf(arg)
@@ -225,7 +226,9 @@ NType funcLinearInt(NType& x, NType& koef)
 template <typename NType>
 NType funcSoftMax(NType& x, NType& koef)
 {
-    return NFUNC_EXP(koef * x);
+    NType val = koef * x;
+    if(val > 87.0) {return NFUNC_EXP87;}
+    else {return NFUNC_EXP(val);}
 }
 
 
@@ -329,7 +332,15 @@ NType derivLinearInt(NType& sum, NType& y, NType& koef)
 template <typename NType>
 NType derivSoftMax(NType& sum, NType& y, NType& koef)
 {
-    return (isEqual(y) ? koef : koef * y);
+    if(isEqual(y))
+    {
+        return koef;
+    }
+    else
+    {
+        return koef * y;
+    }
+    //return (isEqual(y) ? koef : koef * y);
 }
 
 
@@ -364,7 +375,10 @@ template <typename NType>
 void funcLaySoftMax(NArray<NType>& out)
 {
     NType sum = out.sumElements();
-    if(!isEqual(sum)) {out.valdiv(sum);}
+    if(!isEqual(sum))
+    {
+        out.valdiv(sum);
+    }
 }
 
 
@@ -375,7 +389,18 @@ void derivLaySoftMax(NArray<NType>& derivout, NArray<NType>& output, NArray<NTyp
     for(int i = 0; i < outrun.getLength(); i++)
     {
         //derivout[i] = (isEqual(output[i]) || isEqual(outrun[i]) ? 1.0 : 1.0 - outrun[i] / output[i]);
-        derivout[i] = (isEqual(output[i]) ? 1.0 : 1.0 - outrun[i] / output[i]);
+        if(isEqual(output[i]))
+        {
+            derivout[i] = 1.0;
+        }
+        else if(isEqual(outrun[i]))
+        {
+            derivout[i] = 1.0;
+        }
+        else
+        {
+            derivout[i] = 1.0 - outrun[i]/output[i];
+        }
     }
 }
 
@@ -445,9 +470,13 @@ void derivTargetCross(NArray<NType>& derivEnrg, NType* output, NType* outrun, in
         {
             derivEnrg[i] = -1.0;
         }
+        else if(isEqual(outrun[i]))
+        {
+            derivEnrg[i] = output[i];
+        }
         else
         {
-            derivEnrg[i] = (isEqual(outrun[i]) ? output[i] : output[i]/outrun[i]);
+            derivEnrg[i] = output[i]/outrun[i];
         }
     }
 }

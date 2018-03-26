@@ -5,8 +5,6 @@
 #include "ntradetgtab.h"
 //#include <math.h>
 
-enum NPriceType {PriceHigh, PriceLow, PriceClose};
-
 template <typename NType>
 class NTradeTg: public NExamples<NType>
 {
@@ -21,9 +19,10 @@ protected:
     NType koefPrice; //Коэффициент преобразования цены
     NType koefVolume; //Коэффициент преобразования объёма
     int lenInBar; //Количество входных баров
-    NMatrix<NType> dataTg; //Преобразованная таблица данных
+    NPriceDelta typeDelta; //Тип расчёта изменения цены
 
 public:
+    NMatrix<NType> dataTg; //Преобразованная таблица данных
     NTradeTgTab<NType> dataTab; //Таблица для обработки
     NTradeTgTab<NType> dataZad; //Бары, преобразованные по периодам
 
@@ -38,6 +37,7 @@ public:
     NType getKoefVolume();
     void setLenInBar(int val);
     int getLenInBar();
+    NPriceDelta getTypeDelta();
 
 public:
     virtual void doShift(int shift, bool blShift); //Переместить на величину
@@ -47,7 +47,7 @@ public:
     void calcPeriod(); //Бары, преобразованные по периодам
     void calcTg(); //Преобразованная таблица данных
     void calcExample(); //Формирование примеров
-    void funcInTgPrice(NArray<NType>& vec, int ind, int jnd); //Преобразование
+    void funcInTgPrice(NArray<NType>& vec1, NArray<NType>& vec2, int ind, int jnd); //Преобразование
     void funcInTgVolume(NArray<NType>& vec, int ind, int jnd);
     NType funcOutTgPrice(NType& val);
 
@@ -66,6 +66,7 @@ NTradeTg<NType>::NTradeTg():
     this->koefVolume = 1;
     this->period = 1;
     this->lenInBar = 0;
+    this->typeDelta = NPriceDelta::PricePrev;
 }
 
 template <typename NType>
@@ -77,6 +78,7 @@ NTradeTg<NType>::NTradeTg(NTradeTg<NType>& obj):
     this->koefVolume = obj.getKoefVolume();
     this->period = obj.getPeriod();
     this->lenInBar = obj.getLenInBar();
+    this->typeDelta = obj.getTypeDelta();
 }
 
 template <typename NType>
@@ -143,6 +145,12 @@ template <typename NType>
 int NTradeTg<NType>::getLenInBar()
 {
     return this->lenInBar;
+}
+
+template <typename NType>
+NPriceDelta NTradeTg<NType>::getTypeDelta()
+{
+    return this->typeDelta;
 }
 
 
@@ -229,13 +237,27 @@ void NTradeTg<NType>::postrun()
     }
 
     //Заполнение итоговой таблицы calc
-    for(pos = this->beginset; pos < this->endset; pos++)
+    if(this->typeDelta == NPriceDelta::PricePrev)
     {
-        exm = this->get(pos);
-        this->dataZad.high_calc[pos+this->lenInBar+1] = this->dataZad.high_real[pos+this->lenInBar] + exm->outpostrun[0];
-        this->dataZad.low_calc[pos+this->lenInBar+1] = this->dataZad.low_real[pos+this->lenInBar] + exm->outpostrun[1];
-        this->dataZad.energy[pos+this->lenInBar+1] = exm->getEnergy();
-        this->dataZad.typeExample[pos+this->lenInBar+1] = exm->getTypeSet();
+        for(pos = this->beginset; pos < this->endset; pos++)
+        {
+            exm = this->get(pos);
+            this->dataZad.high_calc[pos+this->lenInBar+1] = this->dataZad.high_real[pos+this->lenInBar] + exm->outpostrun[0];
+            this->dataZad.low_calc[pos+this->lenInBar+1] = this->dataZad.low_real[pos+this->lenInBar] + exm->outpostrun[1];
+            this->dataZad.energy[pos+this->lenInBar+1] = exm->getEnergy();
+            this->dataZad.typeExample[pos+this->lenInBar+1] = exm->getTypeSet();
+        }
+    }
+    else if(this->typeDelta == NPriceDelta::PriceClose)
+    {
+        for(pos = this->beginset; pos < this->endset; pos++)
+        {
+            exm = this->get(pos);
+            this->dataZad.high_calc[pos+this->lenInBar+1] = this->dataZad.close_real[pos+this->lenInBar] + exm->outpostrun[0];
+            this->dataZad.low_calc[pos+this->lenInBar+1] = this->dataZad.close_real[pos+this->lenInBar] + exm->outpostrun[1];
+            this->dataZad.energy[pos+this->lenInBar+1] = exm->getEnergy();
+            this->dataZad.typeExample[pos+this->lenInBar+1] = exm->getTypeSet();
+        }
     }
 }
 
@@ -292,13 +314,27 @@ void NTradeTg<NType>::calcTg()
 {
     this->dataTg.init(this->dataZad.getLenRow()-1, 5, 0);
 
-    for(int ind = 1; ind < this->dataTg.getLenRow(); ind++)
+    if(this->typeDelta == NPriceDelta::PricePrev)
     {
-        funcInTgPrice(this->dataZad.open_real, ind, 0);
-        funcInTgPrice(this->dataZad.high_real, ind, 1);
-        funcInTgPrice(this->dataZad.low_real, ind, 2);
-        funcInTgPrice(this->dataZad.close_real, ind, 3);
-        funcInTgVolume(this->dataZad.volume_real, ind, 4);
+        for(int ind = 1; ind < this->dataTg.getLenRow(); ind++)
+        {
+            funcInTgPrice(this->dataZad.open_real, this->dataZad.open_real, ind, 0);
+            funcInTgPrice(this->dataZad.high_real, this->dataZad.high_real, ind, 1);
+            funcInTgPrice(this->dataZad.low_real, this->dataZad.low_real, ind, 2);
+            funcInTgPrice(this->dataZad.close_real, this->dataZad.close_real, ind, 3);
+            funcInTgVolume(this->dataZad.volume_real, ind, 4);
+        }
+    }
+    else if(this->typeDelta == NPriceDelta::PriceClose)
+    {
+        for(int ind = 1; ind < this->dataTg.getLenRow(); ind++)
+        {
+            funcInTgPrice(this->dataZad.close_real, this->dataZad.open_real, ind, 0);
+            funcInTgPrice(this->dataZad.close_real, this->dataZad.high_real, ind, 1);
+            funcInTgPrice(this->dataZad.close_real, this->dataZad.low_real, ind, 2);
+            funcInTgPrice(this->dataZad.close_real, this->dataZad.close_real, ind, 3);
+            funcInTgVolume(this->dataZad.volume_real, ind, 4);
+        }
     }
 }
 
@@ -313,6 +349,7 @@ void NTradeTg<NType>::calcExample()
     {
         NExample<NType>* pExam = new NExample<NType>();
 
+        //Вход
         for(int knd = 0; knd < this->lenInBar; knd++)
         {
             for(int jnd = 1; jnd < this->dataTg.getLenColumn(); jnd++)
@@ -322,6 +359,7 @@ void NTradeTg<NType>::calcExample()
             }
         }
 
+        //Выход
         value = this->dataTg[ind + this->lenInBar][1];
         pExam->output.push(value);
 
@@ -333,9 +371,9 @@ void NTradeTg<NType>::calcExample()
 }
 
 template <typename NType>
-void NTradeTg<NType>::funcInTgPrice(NArray<NType>& vec, int ind, int jnd)
+void NTradeTg<NType>::funcInTgPrice(NArray<NType>& vec1, NArray<NType>& vec2, int ind, int jnd)
 {
-    NType dValue = vec[ind] - vec[ind-1];
+    NType dValue = vec2[ind] - vec1[ind-1];
     dValue = NFUNC_ATAN(this->koefTg * this->koefPrice * dValue);
     this->dataTg.set(dValue, ind-1, jnd);
 }
@@ -371,6 +409,7 @@ void NTradeTg<NType>::saveECSV(DataECSV& dt, string& parent)
     str_val = to_string(this->koefPrice); dt.addElement(parent, "koefPrice", str_val, typeid(NType).name());
     str_val = to_string(this->koefVolume); dt.addElement(parent, "koefVolume", str_val, typeid(NType).name());
     str_val = to_string(this->lenInBar); dt.addElement(parent, "lenInBar", str_val, typeid(int).name());
+    str_val = to_string(this->typeDelta); dt.addElement(parent, "typeDelta", str_val, typeid(int).name());
 
     //to_matrix_string(str_mtrx, this->dataTg); dt.addElement(parent, "dataTg", str_mtrx, typeid(NType).name());
     //this->dataTab.saveECSV(dt, fieldTab);
@@ -414,6 +453,7 @@ void NTradeTg<NType>::loadECSV(DataECSV& dt, string& parent)
             else if(iter->getFieldValue(parent, "koefPrice", str_val)) {to_value(this->koefPrice, str_val); ind++;}
             else if(iter->getFieldValue(parent, "koefVolume", str_val)) {to_value(this->koefVolume, str_val); ind++;}
             else if(iter->getFieldValue(parent, "lenInBar", str_val)) {to_value(this->lenInBar, str_val); ind++;}
+            else if(iter->getFieldValue(parent, "typeDelta", str_val)) {to_value(this->typeDelta, str_val); ind++;}
 
             else if(iter->getFieldValue(parent, "dataTg", str_mtrx)) {to_matrix_value(this->dataTg, str_mtrx); ind++;}
             else if(iter->cmpPath(fieldTab, false)) //Субполя класса

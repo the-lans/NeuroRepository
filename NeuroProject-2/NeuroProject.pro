@@ -30,7 +30,8 @@ SOURCES += main.cpp\
     funcecsv.cpp \
     neuroproject.cpp \
     nfilesconstruct.cpp \
-    iobjectecsv.cpp
+    iobjectecsv.cpp \
+    ntrade.cpp
 
 HEADERS  += mainwindow.h \
     narray.h \
@@ -52,6 +53,7 @@ HEADERS  += mainwindow.h \
     neurocomitet.h \
     ngroupenergy.h \
     neuroconstructor.h \
-    nfilesconstruct.h
+    nfilesconstruct.h \
+    ntrade.h
 
 FORMS    += mainwindow.ui

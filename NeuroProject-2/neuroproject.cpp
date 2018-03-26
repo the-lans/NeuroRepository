@@ -142,8 +142,8 @@ string to_string(NNormalizationFunc& value)
 
 bool equalf(float A, float B, unsigned int maxUlps)
 {
-    int aInt = *(int*)&A;
-    int bInt = *(int*)&B;
+    int aInt = *(int*)(&A);
+    int bInt = *(int*)(&B);
     // Уберем знак в aInt, если есть, чтобы получить правильно упорядоченную последовательность
     if(aInt < 0) {aInt = 0x80000000 - aInt;}
     //aInt &= 0x7fffffff;

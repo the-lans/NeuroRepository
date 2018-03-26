@@ -34,6 +34,7 @@ protected:
     int limitset; //Ограничение на загрузку примеров
     int lenIn; //Количество входов
     int lenOut; //Количество выходов
+    int lenClass; //Количество классов
     bool blTabExtern; //Признак внешних данных для таблицы tab
     bool blClass; //Преобразование номера класса в вектор
     bool blFilter; //Фильтр выходного вектора
@@ -41,6 +42,8 @@ protected:
     NType energyAver; //Средняя энергия примеров
     NType energyMax; //Максимальная энергия примеров
     NType energySum; //Сумма энергий примеров
+    int energyClass; //Количество ошибочно определённых классов
+    int totalClass; //Общее количество примеров определённых классов
     NNormalizationFunc typeNormIn; //Тип нормализации входа
     NNormalizationFunc typeNormOut; //Тип нормализации выхода
     NType inMin; //Минимум входа
@@ -51,6 +54,7 @@ protected:
     NType outKoef; //Коэффициент выхода
     int lenRand; //Количество случайных примеров
     bool blClearTypeSet; //Обучение Time: Очищать тип примера при перемещении окна обучения?
+    int sizeClass; //Размер класса для выравнивания обучающей выборки
 
 public:
     void setTestset(int val);
@@ -65,14 +69,20 @@ public:
     int getEndset();
     int getLimitset();
     bool getBlOriginal();
+    bool getBlClass();
+    bool getBlFilter();
     void setEnergyAver(NType enrg);
     void setEnergyMax(NType enrg);
     void setEnergySum(NType enrg);
+    void setEnergyClass(int enrg);
     NType getEnergyAver();
     NType getEnergyMax();
     NType getEnergySum();
+    int getEnergyClass();
+    int getTotalClass();
     int getLenIn();
     int getLenOut();
+    int getSizeClass();
 
 public:
     void shiftset(int delta); //Смещение выборок по массиву примеров
@@ -98,8 +108,13 @@ public:
     void updateFunc(); //Обновить функции нормализации
     virtual void prerun(); //Предобработка данных
     virtual void postrun(); //Постобработка данных
+    void runEnergyClass(NSetType st); //Расчёт количества ошибочно определённых классов
     void getGroupEnergy(NGroupEnergy<NType>& ge); //Возврат групповой энергии
     void setGroupEnergy(NGroupEnergy<NType>& ge); //Установка групповой энергии
+    void initUsage(NSetType st); //Инициализация использования примеров
+    virtual void thinnigExamples(int shift); //Прореживание примеров
+    int getLenClass(); //Количество используемых в задаче классов
+    int getLenExamples(NSetType st); //Количество используемых примеров
 
 public:
     virtual void saveECSV(DataECSV& dt, string& parent);
@@ -118,8 +133,11 @@ NExamples<NType>::NExamples()
     this->energyAver = 0;
     this->energyMax = 0;
     this->energySum = 0;
+    this->energyClass = 0;
+    this->totalClass = 0;
     this->lenIn = 0;
     this->lenOut = 0;
+    this->lenClass = 0;
     this->blTabExtern = true;
     this->blClass = false;
     this->blFilter = false;
@@ -139,6 +157,7 @@ NExamples<NType>::NExamples()
     this->outKoef = 1;
     this->lenRand = 0;
     this->blClearTypeSet = false;
+    this->sizeClass = 0;
 }
 
 template <typename NType>
@@ -220,6 +239,18 @@ bool NExamples<NType>::getBlOriginal()
 }
 
 template <typename NType>
+bool NExamples<NType>::getBlClass()
+{
+    return this->blClass;
+}
+
+template <typename NType>
+bool NExamples<NType>::getBlFilter()
+{
+    return this->blFilter;
+}
+
+template <typename NType>
 void NExamples<NType>::setEnergyAver(NType enrg)
 {
     this->energyAver = enrg;
@@ -235,6 +266,12 @@ template <typename NType>
 void NExamples<NType>::setEnergySum(NType enrg)
 {
     this->energySum = enrg;
+}
+
+template <typename NType>
+void NExamples<NType>::setEnergyClass(int enrg)
+{
+    this->energyClass = enrg;
 }
 
 template <typename NType>
@@ -256,6 +293,18 @@ NType NExamples<NType>::getEnergySum()
 }
 
 template <typename NType>
+int NExamples<NType>::getEnergyClass()
+{
+    return this->energyClass;
+}
+
+template <typename NType>
+int NExamples<NType>::getTotalClass()
+{
+    return this->totalClass;
+}
+
+template <typename NType>
 int NExamples<NType>::getLenIn()
 {
     return this->lenIn;
@@ -266,6 +315,13 @@ int NExamples<NType>::getLenOut()
 {
     return this->lenOut;
 }
+
+template <typename NType>
+int NExamples<NType>::getSizeClass()
+{
+    return this->sizeClass;
+}
+
 
 template <typename NType>
 void NExamples<NType>::shiftset(int delta)
@@ -356,6 +412,7 @@ void NExamples<NType>::deinit()
     if(!this->blTabExtern && this->tab != nullptr) {delete this->tab;}
     this->lenIn = 0;
     this->lenOut = 0;
+    this->lenClass = 0;
 
     this->original.clear();
     //this->outpostrun.clear();
@@ -365,6 +422,8 @@ void NExamples<NType>::deinit()
     this->energyAver = 0;
     this->energyMax = 0;
     this->energySum = 0;
+    this->energyClass = 0;
+    this->totalClass = 0;
     this->typeNormIn = NNormalizationFunc::NNormNone;
     this->typeNormOut = NNormalizationFunc::NNormNone;
     this->funcNormalizationIn = nullptr;
@@ -377,6 +436,8 @@ void NExamples<NType>::deinit()
     this->inKoef = 1;
     this->outKoef = 1;
     this->lenRand = 0;
+    this->blClearTypeSet = false;
+    this->sizeClass = 0;
 }
 
 template <typename NType>
@@ -592,7 +653,8 @@ void NExamples<NType>::prerun()
                 for(shift = this->lenIn; shift < this->tab->getLenColumn(); shift++)
                 {
                     value_class = tab->get(ind, shift);
-                    for(jnd = 1; jnd <= this->lenOut; jnd++)
+                    pExam->outputNumClass.push(value_class);
+                    for(jnd = 1; jnd <= this->lenClass; jnd++)
                     {
                         value = (isEqual(value_class, (NType)jnd) ? 1.0 : 0.0);
                         pExam->output.push(value);
@@ -622,8 +684,8 @@ void NExamples<NType>::prerun()
 template <typename NType>
 void NExamples<NType>::postrun()
 {
-    int ind, pos;
-    NType value;
+    int ind, jnd, pos;
+    NType value, valrun, valmax;
     NExample<NType>* exm;
     NType outDelta = this->outMax - this->outMin;
 
@@ -638,12 +700,17 @@ void NExamples<NType>::postrun()
         {
             if(this->blClass)
             {
-                value = 0;
-                for(ind = 0; ind < exm->outrun.getLength(); ind++)
+                int len = exm->outrun.getLength() / this->lenOut;
+                for(jnd = 0; jnd < len; jnd++)
                 {
-                    if(exm->outrun[ind] > this->valFilter) {value = ind+1;}
+                    value = 0; valmax = 0;
+                    for(ind = 0; ind < this->lenOut; ind++)
+                    {
+                        valrun = exm->outrun[jnd * this->lenOut + ind];
+                        if((valrun > this->valFilter)&&(valrun > valmax)) {valmax = valrun; value = ind+1;}
+                    }
+                    exm->outpostrun.push(value);
                 }
-                exm->outpostrun.push(value);
             }
             else
             {
@@ -671,11 +738,50 @@ void NExamples<NType>::postrun()
 }
 
 template <typename NType>
+void NExamples<NType>::runEnergyClass(NSetType st)
+{
+    int ind, pos;
+    NExample<NType>* exm;
+
+    energyClass = 0;
+    totalClass = 0;
+    if(this->blFilter)
+    {
+        for(pos = this->beginset; pos < this->endset; pos++)
+        {
+            exm = this->get(pos);
+            if(st == exm->getTypeSet() || st == NSetType::NSetNone)
+            {
+                if(this->blClass)
+                {
+                    int len = exm->outrun.getLength() / this->lenOut;
+                    for(ind = 0; ind < len; ind++)
+                    {
+                        if(!isEqual((NType)exm->outputNumClass[ind], exm->outpostrun[ind])) {energyClass++;}
+                        totalClass++;
+                    }
+                }
+                else
+                {
+                    for(ind = 0; ind < exm->output.getLength(); ind++)
+                    {
+                        if(!isEqual(exm->output[ind], exm->outpostrun[ind])) {energyClass++;}
+                        totalClass++;
+                    }
+                }
+            }
+        }
+    }
+}
+
+template <typename NType>
 void NExamples<NType>::getGroupEnergy(NGroupEnergy<NType>& ge)
 {
     ge.energyAver = this->energyAver;
     ge.energyMax = this->energyMax;
     ge.energySum = this->energySum;
+    ge.energyClass = this->energyClass;
+    ge.totalClass = this->totalClass;
 }
 
 template <typename NType>
@@ -684,6 +790,84 @@ void NExamples<NType>::setGroupEnergy(NGroupEnergy<NType>& ge)
     this->energyAver = ge.energyAver;
     this->energyMax = ge.energyMax;
     this->energySum = ge.energySum;
+    this->energyClass = ge.energyClass;
+    this->totalClass = ge.totalClass;
+}
+
+template <typename NType>
+void NExamples<NType>::initUsage(NSetType st)
+{
+    if(st == NSetType::NSetTrain)
+    {
+        for(int ind = this->beginset; ind < this->testset; ind++) {this->get(ind)->setUsage(true);}
+    }
+    else if(st == NSetType::NSetTest)
+    {
+        for(int ind = this->testset; ind < this->validset; ind++) {this->get(ind)->setUsage(true);}
+    }
+    else if(st == NSetType::NSetValidate)
+    {
+        for(int ind = this->validset; ind < this->endset; ind++) {this->get(ind)->setUsage(true);}
+    }
+    else
+    {
+        for(int ind = this->beginset; ind < this->endset; ind++) {this->get(ind)->setUsage(true);}
+    }
+}
+
+template <typename NType>
+void NExamples<NType>::thinnigExamples(int shift)
+{
+    int ind;
+    NExample<NType>* exm;
+    int numClass;
+
+    if(this->sizeClass == 0 || this->lenClass) {return;}
+
+    int iterClass[lenClass];
+    for(ind = 0; ind < lenClass; ind++) {iterClass[ind] = 0;}
+
+    for(ind = this->beginset; ind < this->testset; ind++)
+    {
+        exm = this->get(ind);
+        numClass = exm->outputNumClass[shift];
+        if(numClass > 0)
+        {
+            if(iterClass[numClass-1] < this->sizeClass) {iterClass[numClass-1]++;}
+            else {exm->setUsage(false);}
+        }
+    }
+}
+
+template <typename NType>
+int NExamples<NType>::getLenClass()
+{
+    return this->lenClass;
+}
+
+template <typename NType>
+int NExamples<NType>::getLenExamples(NSetType st)
+{
+    int len = 0;
+
+    if(st == NSetType::NSetTrain)
+    {
+        for(int ind = this->beginset; ind < this->testset; ind++) {if(this->get(ind)->getUsage()) {len++;}}
+    }
+    else if(st == NSetType::NSetTest)
+    {
+        for(int ind = this->testset; ind < this->validset; ind++) {if(this->get(ind)->getUsage()) {len++;}}
+    }
+    else if(st == NSetType::NSetValidate)
+    {
+        for(int ind = this->validset; ind < this->endset; ind++) {if(this->get(ind)->getUsage()) {len++;}}
+    }
+    else
+    {
+        for(int ind = this->beginset; ind < this->endset; ind++) {if(this->get(ind)->getUsage()) {len++;}}
+    }
+
+    return len;
 }
 
 template <typename NType>
@@ -708,6 +892,7 @@ void NExamples<NType>::saveECSV(DataECSV& dt, string& parent)
 
     str_val = to_string(this->lenIn); dt.addElement(parent, "lenIn", str_val, typeid(int).name());
     str_val = to_string(this->lenOut); dt.addElement(parent, "lenOut", str_val, typeid(int).name());
+    str_val = to_string(this->lenClass); dt.addElement(parent, "lenClass", str_val, typeid(int).name());
     str_val = to_vstring(this->blClass); dt.addElement(parent, "blClass", str_val, typeid(bool).name());
     str_val = to_vstring(this->blFilter); dt.addElement(parent, "blFilter", str_val, typeid(bool).name());
     str_val = to_string(this->valFilter); dt.addElement(parent, "valFilter", str_val, typeid(NType).name());
@@ -722,10 +907,13 @@ void NExamples<NType>::saveECSV(DataECSV& dt, string& parent)
     str_val = to_string(this->outKoef); dt.addElement(parent, "outKoef", str_val, typeid(NType).name());
     str_val = to_string(this->lenRand); dt.addElement(parent, "lenRand", str_val, typeid(int).name());
     str_val = to_vstring(this->blClearTypeSet); dt.addElement(parent, "blClearTypeSet", str_val, typeid(bool).name());
+    str_val = to_string(this->sizeClass); dt.addElement(parent, "sizeClass", str_val, typeid(int).name());
 
     str_val = to_string(this->energyAver); dt.addElement(parent, "energyAver", str_val, typeid(NType).name());
     str_val = to_string(this->energyMax); dt.addElement(parent, "energyMax", str_val, typeid(NType).name());
     str_val = to_string(this->energySum); dt.addElement(parent, "energySum", str_val, typeid(NType).name());
+    str_val = to_string(this->energyClass); dt.addElement(parent, "energyClass", str_val, typeid(int).name());
+    str_val = to_string(this->totalClass); dt.addElement(parent, "totalClass", str_val, typeid(int).name());
 
     mtrx.clear();
     for(int i = 0; i < this->getLength(); i++) {exm = this->get(i); mtrx.pushRow(exm->input);}
@@ -792,6 +980,7 @@ void NExamples<NType>::loadECSV(DataECSV& dt, string& parent)
 
             else if(iter->getFieldValue(parent, "lenIn", str_val)) {to_value(this->lenIn, str_val);}
             else if(iter->getFieldValue(parent, "lenOut", str_val)) {to_value(this->lenOut, str_val);}
+            else if(iter->getFieldValue(parent, "lenClass", str_val)) {to_value(this->lenClass, str_val);}
             else if(iter->getFieldValue(parent, "blClass", str_val)) {to_value(this->blClass, str_val);}
             else if(iter->getFieldValue(parent, "blFilter", str_val)) {to_value(this->blFilter, str_val);}
             else if(iter->getFieldValue(parent, "valFilter", str_val)) {to_value(this->valFilter, str_val);}
@@ -806,10 +995,13 @@ void NExamples<NType>::loadECSV(DataECSV& dt, string& parent)
             else if(iter->getFieldValue(parent, "outKoef", str_val)) {to_value(this->outKoef, str_val);}
             else if(iter->getFieldValue(parent, "lenRand", str_val)) {to_value(this->lenRand, str_val);}
             else if(iter->getFieldValue(parent, "blClearTypeSet", str_val)) {to_value(this->blClearTypeSet, str_val);}
+            else if(iter->getFieldValue(parent, "sizeClass", str_val)) {to_value(this->sizeClass, str_val);}
 
             else if(iter->getFieldValue(parent, "energyAver", str_val)) {to_value(this->energyAver, str_val);}
             else if(iter->getFieldValue(parent, "energyMax", str_val)) {to_value(this->energyMax, str_val);}
             else if(iter->getFieldValue(parent, "energySum", str_val)) {to_value(this->energySum, str_val);}
+            else if(iter->getFieldValue(parent, "energyClass", str_val)) {to_value(this->energyClass, str_val);}
+            else if(iter->getFieldValue(parent, "totalClass", str_val)) {to_value(this->totalClass, str_val);}
 
             else if(iter->getFieldValue(field, "input", str_mtrx)) {to_matrix_value(mtrx_input, str_mtrx);}
             else if(iter->getFieldValue(field, "output", str_mtrx)) {to_matrix_value(mtrx_output, str_mtrx);}

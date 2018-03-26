@@ -5,6 +5,7 @@
 #include "nmatrix.h"
 #include "iobjectecsv.h"
 #include "neuroproject.h"
+#include "ntrade.h"
 #include <string>
 
 using namespace std;
@@ -45,7 +46,8 @@ template <typename NType>
 int NTradeTgTab<NType>::getLenColumn()
 {
     if(this->high_calc.empty() || this->low_calc.empty()) {return 7;}
-    else {return 10;}
+    else if(this->typeExample.empty()) {return 10;}
+    else {return 11;}
 }
 
 template <typename NType>

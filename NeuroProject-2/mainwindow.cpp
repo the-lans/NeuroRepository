@@ -12,7 +12,7 @@ MainWindow::MainWindow(QWidget *parent):
     this->dir = QDir::currentPath();
     //this->dir = "I:/!ProgramProjects/NeuroProject/NeuroProject-2/trade_test";
     //this->dir = "D:/ProgramProjects/NeuroProject/NeuroProject-2/trade_test";
-    //this->dir = "D:/Ilya/Prog/NeuroProject-2/trade_test";
+    //this->dir = "D:/Ilya/Prog/NeuroProject-3/tradeprofit_2_week";
 
     this->construct.fin.current_dir = dir.toStdString();
     this->construct.fout.current_dir = dir.toStdString();
@@ -80,13 +80,13 @@ void MainWindow::run(bool isTrain)
         this->construct.init_constructor(isTrain);
         this->construct.zad->prerun();
     }
-    else if(variant == 1) //Задача Trade
+    else if(variant == 1) //Задача Trade High/Low
     {
         this->construct.zad = new NTradeTg<NTypeValue>;
         this->construct.init_constructor(isTrain);
 
         // Примеры
-        isLoad = dt.read(dir.toStdString() + "\\bars.csv");
+        isLoad = dt.read(dir.toStdString() + "/bars.csv");
         if(isLoad)
         {
             ((NTradeTg<NTypeValue>*)this->construct.zad)->dataTab.loadECSV(dt, parent);
@@ -142,7 +142,7 @@ void MainWindow::run(bool isTrain)
             this->construct.net->runExamples(NSetType::NSetTest);
             str += "Energy = "; valNum.setNum(this->construct.zad->getEnergyAver()); str += valNum + "\n";
             str += "EnergySum = "; valNum.setNum(this->construct.zad->getEnergySum()); str += valNum + "\n";
-            str += "EnergyMax = "; valNum.setNum(this->construct.zad->getEnergyMax()); str += valNum + "\n";
+            str += "EnergyMax = "; valNum.setNum(this->construct.zad->getEnergyMax()); str += valNum + "\n";    
         }
         str += "EnergyRegularization = "; valNum.setNum(this->construct.net->getEnergyRegularization()); str += valNum + "\n";
         str += "\n";
@@ -159,6 +159,15 @@ void MainWindow::run(bool isTrain)
         if(!isTrain || this->construct.bp->getCountTime() == 1)
         {
             this->construct.zad->postrun();
+
+            this->construct.zad->runEnergyClass(NSetType::NSetTrain);
+            str += "Train EnergyClass = "; valNum.setNum(this->construct.zad->getEnergyClass()); str += valNum + " / "; valNum.setNum(this->construct.zad->getTotalClass()); str += valNum + "\n";
+            this->construct.zad->runEnergyClass(NSetType::NSetTest);
+            str += "Test EnergyClass = "; valNum.setNum(this->construct.zad->getEnergyClass()); str += valNum + " / "; valNum.setNum(this->construct.zad->getTotalClass()); str += valNum + "\n";
+            this->construct.zad->runEnergyClass(NSetType::NSetValidate);
+            str += "Validate EnergyClass = "; valNum.setNum(this->construct.zad->getEnergyClass()); str += valNum + " / "; valNum.setNum(this->construct.zad->getTotalClass()); str += valNum + "\n";
+            str += "\n";
+
             for(int pos = this->construct.zad->getBeginset(); pos < this->construct.zad->getEndset(); pos++)
             {
                 exm = this->construct.zad->at(pos);
