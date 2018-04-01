@@ -108,14 +108,14 @@ string to_string(NNormalizationFunc& value);
 bool equalf(float A, float B, int maxUlps);
 
 template <typename NType>
-bool isEqual(const NType& v1)
+inline bool isEqual(const NType& v1)
 {
     if(v1 >= 0) {return v1 <= NFUNC_EPSILON;}
     else {return -v1 <= NFUNC_EPSILON;}
 }
 
 template <typename NType>
-bool isEqual(const NType& v1, const NType& v2)
+inline bool isEqual(const NType& v1, const NType& v2)
 {
     NType eql = v1 - v2;
     if(eql >= 0) {return eql <= NFUNC_EPSILON;}
@@ -226,9 +226,7 @@ NType funcLinearInt(NType& x, NType& koef)
 template <typename NType>
 NType funcSoftMax(NType& x, NType& koef)
 {
-    NType val = koef * x;
-    if(val > 87.0) {return NFUNC_EXP87;}
-    else {return NFUNC_EXP(val);}
+    return koef * x;
 }
 
 
@@ -332,15 +330,7 @@ NType derivLinearInt(NType& sum, NType& y, NType& koef)
 template <typename NType>
 NType derivSoftMax(NType& sum, NType& y, NType& koef)
 {
-    if(isEqual(y))
-    {
-        return koef;
-    }
-    else
-    {
-        return koef * y;
-    }
-    //return (isEqual(y) ? koef : koef * y);
+    return koef;
 }
 
 
@@ -374,11 +364,14 @@ NType reversGaussian(NType& y, NType& koef)
 template <typename NType>
 void funcLaySoftMax(NArray<NType>& out)
 {
-    NType sum = out.sumElements();
-    if(!isEqual(sum))
+    NType val = -out.maxElements();
+    out.valsum(val);
+    for(int i = 0; i < out.getLength(); i++)
     {
-        out.valdiv(sum);
+        out[i] = NFUNC_EXP(out[i]);
     }
+    val = out.sumElements();
+    out.valdiv(val);
 }
 
 
@@ -391,7 +384,7 @@ void derivLaySoftMax(NArray<NType>& derivout, NArray<NType>& output, NArray<NTyp
         //derivout[i] = (isEqual(output[i]) || isEqual(outrun[i]) ? 1.0 : 1.0 - outrun[i] / output[i]);
         if(isEqual(output[i]))
         {
-            derivout[i] = 1.0;
+            derivout[i] = outrun[i];
         }
         else if(isEqual(outrun[i]))
         {
@@ -399,7 +392,7 @@ void derivLaySoftMax(NArray<NType>& derivout, NArray<NType>& output, NArray<NTyp
         }
         else
         {
-            derivout[i] = 1.0 - outrun[i]/output[i];
+            derivout[i] = outrun[i] * (1.0 - outrun[i]/output[i]);
         }
     }
 }
@@ -439,15 +432,15 @@ NType targetCross(NType* output, NType* outrun, int count)
         {
             if(outrun[i] > 0)
             {
-                enrg += output[i] * NFUNC_LN(outrun[i]);
+                enrg -= output[i] * NFUNC_LN(outrun[i]);
             }
             else
             {
-                return NFUNC_LIMITS_MAX;
+                return -NFUNC_LIMITS_MAX;
             }
         }
     }
-    return -enrg;
+    return enrg;
 }
 
 

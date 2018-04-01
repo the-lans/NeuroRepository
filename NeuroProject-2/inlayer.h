@@ -400,17 +400,16 @@ bool INLayer<NType>::empty()
 template <typename NType>
 void INLayer<NType>::init_slay()
 {
-    NType value;
-    NType koefDropout = 1/(1 - this->dropout);
-    std::uniform_real_distribution<NType> distribution(0, 1);
     NType* pSlay = this->slay.getData();
+    std::uniform_real_distribution<NType> distribution(0, 1);
+    this->initKoefDropout();
 
     for(int ind = 0; ind < this->slay.getLength(); ind++)
     {
-        value = distribution(NRandGenerator);
-        if(value < this->dropout) {pSlay[ind] = 0;}
-        else {pSlay[ind] = koefDropout;}
+        pSlay[ind] = (distribution(NRandGenerator) < this->dropout ? 0 : 1);
     }
+    //this->slay.init_value(1);
+    //if(this->dropout > 0) {pSlay[0] = 0; pSlay[1] = 0; pSlay[2] = 0; pSlay[3] = 0;}
 }
 
 template <typename NType>
@@ -440,8 +439,20 @@ NArray<NType>* INLayer<NType>::run(NArray<NType>* X)
 template <typename NType>
 NArray<NType>* INLayer<NType>::run_dropout(NArray<NType>* X)
 {
-    run(X);
+    NType* pOut = output.getData();
+    NType* pSum = sum.getData();
+
+    sum.mul(*X, weigth, true); //X.length = weigth.lenRow
+    sum.sum(bias);
+
+    for(int i = 0; i < output.getLength(); i++)
+    {
+        activation = activNeurons[i];
+        pOut[i] = activation(pSum[i], koefNeurons[i]);
+    }
+
     output.mul(slay);
+    output.valmul(koefDropout);
 
     return &(output);
 }

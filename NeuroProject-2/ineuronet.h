@@ -356,6 +356,7 @@ void INeuroNet<NType>::init_slay()
     {
         pLay[ind]->init_slay();
     }
+    //cout << "slay = " << pLay[0]->slay.sumElements() << "\n";
 }
 
 template <typename NType>
@@ -1137,6 +1138,7 @@ void INeuroNet<NType>::saveECSV(DataECSV& dt, string& parent)
     this->updateLenNeurons();
     this->updateKoefLay();
     this->updateDropout();
+    if(!this->isShotData()) {this->makeShot();}
 
     dt.addGroup(parent, "");
     //to_array_string(str_vec, enm_arr); dt.addElement(parent, "typeLay", str_vec, typeid(int).name());
@@ -1152,6 +1154,7 @@ void INeuroNet<NType>::saveECSV(DataECSV& dt, string& parent)
     to_array_string(str_vec, this->lock); dt.addElement(parent, "lock", str_vec, typeid(bool).name());
     str_val = to_vstring(this->blLock); dt.addElement(parent, "blLock", str_val, typeid(bool).name());
     str_val = to_string(this->typeTarget); dt.addElement(parent, "typeTarget", str_val, typeid(int).name());
+    to_array_string(str_vec, this->shot); dt.addElement(parent, "shotNet", str_vec, typeid(NType).name());
 
     for(int i = 0; i < this->lay.getLength(); i++)
     {

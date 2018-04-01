@@ -98,8 +98,12 @@ public:
     NType& endElement(); //Последний элемент
     void doMask(bool* mask); //Обнуление элементов по маске
 public:
-    NType sumElements();
+    NType sumElements(); //Сумма элементов
     NType sumElements(int sift);
+    NType maxElements(); //Максимум
+    int maxArg();
+    NType minElements(); //Минимум
+    int minArg();
     NArray<NType>& valsum(const NType& B);
     NArray<NType>& sum(NArray<NType>& B);
     NArray<NType>& sum(NArray<NType>& A, NArray<NType>& B);
@@ -740,6 +744,50 @@ NType NArray<NType>::sumElements(int shift)
         total += data[i];
     }
     return total;
+}
+
+template <typename NType>
+NType NArray<NType>::maxElements()
+{
+    NType total = data[0];
+    for(int i = 1; i < length; i++)
+    {
+        if(data[i] > total) {total = data[i];}
+    }
+    return total;
+}
+
+template <typename NType>
+int NArray<NType>::maxArg()
+{
+    int index = 0;
+    for(int i = 1; i < length; i++)
+    {
+        if(data[i] > data[index]) {index = i;}
+    }
+    return index;
+}
+
+template <typename NType>
+NType NArray<NType>::minElements()
+{
+    NType total = data[0];
+    for(int i = 1; i < length; i++)
+    {
+        if(data[i] < total) {total = data[i];}
+    }
+    return total;
+}
+
+template <typename NType>
+int NArray<NType>::minArg()
+{
+    int index = 0;
+    for(int i = 1; i < length; i++)
+    {
+        if(data[i] < data[index]) {index = i;}
+    }
+    return index;
 }
 
 template <typename NType>
