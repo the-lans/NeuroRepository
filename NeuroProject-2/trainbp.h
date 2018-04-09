@@ -48,6 +48,7 @@ protected:
     NType minErrorTest; //Обучение: минимальная ошибка тестового множества
     bool blErrorTest; //Обучение: использование тестового множества для оценки
     bool blDropout; //Обучение: использование при обучении dropout
+    bool blDropoutExm; //Использовать dropout для каждого примера
 
     int stepExmTime; //Обучение Time: Шаг взятия примеров
     int countTime; //Обучение Time: Количество обучений нейросети Time
@@ -160,6 +161,7 @@ TrainBP<NType>::TrainBP()
     this->minErrorTest = 0;
     this->blErrorTest = false;
     this->blDropout = false;
+    this->blDropoutExm = false;
     this->stepExmTime = 1;
     this->countTime = 1;
     this->clearNet = true;
@@ -481,8 +483,9 @@ void TrainBP<NType>::train()
     if(this->stepReg != 0) {this->makePoint();}
     if(blDropout)
     {
-        if(this->stepDropout == 0) {this->stepDropout = this->maxEpoches + 1;}
-        this->net->init_slay();
+        if(stepDropout == 0) {stepDropout = this->maxEpoches + 1;}
+        if(!blDropoutExm) {this->net->init_slay();}
+        this->net->initKoefDropout();
     }
 
     //Цикл обучения
@@ -511,6 +514,7 @@ void TrainBP<NType>::train()
                     //cout << "Primer: " << pos << "\n"; //Тест
                     if(exm->getUsage())
                     {
+                        if(blDropoutExm) {this->net->init_slay();}
                         this->net->runExampleDropout(exm);
                         calculateError(exm);
                         change(exm);
@@ -562,7 +566,7 @@ void TrainBP<NType>::train()
             }
 
             if(isPoint) {this->makePoint();}
-            if(blDropout && (epoches % stepDropout == 0)) {this->net->init_slay();}
+            if(blDropout && !blDropoutExm && (epoches % stepDropout == 0)) {this->net->init_slay();}
         }
 
         this->stabEnergy++;
@@ -655,18 +659,37 @@ void TrainBP<NType>::calculateError(NExample<NType>* exm)
 
     k = lenLay-1;
     pLay[k]->derivRun(pMas[k]);
-    if(blDropout) {pMas[k]->mul(pLay[k]->slay);}
+    //if(blDropout) {pMas[k]->mul(pLay[k]->slay);}
     if(outlay != nullptr) {pMas[k]->mul(*outlay);}
     pMas[k]->mul(er);
     //cout << "d=" << pMas[k]->get(0) << ", " << pMas[k]->get(1) << ", " << pMas[k]->get(2) << "\n"; //Тест
 
     // Скрытый слой
-    for(k = lenLay-2; k >= 0; k--)
+    if(blDropout)
     {
-        pLay[k]->derivRun(pMas[k]);
-        if(blDropout) {pMas[k]->mul(pLay[k]->slay);}
-        this->backOut.mul(*pMas[k+1], pLay[k+1]->weigth, false);
-        pMas[k]->mul(this->backOut);
+        for(k = lenLay-2; k >= 0; k--)
+        {
+            pLay[k]->derivRun(pMas[k]);
+            //pMas[k]->mul(pLay[k]->slay);
+            if(pLay[k+1]->getDropout() > 0)
+            {
+                this->backOut.mul(*pMas[k+1], pLay[k+1]->slay, false);
+            }
+            else
+            {
+                this->backOut.mul(*pMas[k+1], pLay[k+1]->weigth, false);
+            }
+            pMas[k]->mul(this->backOut);
+        }
+    }
+    else
+    {
+        for(k = lenLay-2; k >= 0; k--)
+        {
+            pLay[k]->derivRun(pMas[k]);
+            this->backOut.mul(*pMas[k+1], pLay[k+1]->weigth, false);
+            pMas[k]->mul(this->backOut);
+        }
     }
 }
 
@@ -689,47 +712,47 @@ template <typename NType>
 void TrainBP<NType>::change(NExample<NType>* exm)
 {
     // Входной слой weight
-    koefDropout = (blDropout ? pLay[0]->getKoefDropout() : 1);
+    //koefDropout = (blDropout ? pLay[0]->getKoefDropout() : 1);
     this->changeWeight1.mul(exm->input, *pMas[0]);
-    this->changeWeight1.valmul(koefTrain * koefDropout);
+    this->changeWeight1.valmul(koefTrain);
 
     this->changeWeight2.copyValue(pChangeLay[0]->weigth);
-    this->changeWeight2.valmul(koefInert * koefDropout);
+    this->changeWeight2.valmul(koefInert);
     this->changeWeight2.sum(this->changeWeight1);
 
     this->changeWeight1.copyValue(pLay[0]->weigth);
-    this->changeWeight1.valmul(koefRegular * koefDropout);
+    this->changeWeight1.valmul(koefRegular);
     pChangeLay[0]->weigth.sum(this->changeWeight1, this->changeWeight2);
 
     // Скрытый слой weight
     for(int k = 1; k < this->net->lay.getLength(); k++)
     {
-        koefDropout = (blDropout ? pLay[k]->getKoefDropout() : 1);
+        //koefDropout = (blDropout ? pLay[k]->getKoefDropout() : 1);
         this->changeWeight1.mul(pLay[k-1]->output, *pMas[k]);
-        this->changeWeight1.valmul(koefTrain * koefDropout);
+        this->changeWeight1.valmul(koefTrain);
 
         this->changeWeight2.copyValue(pChangeLay[k]->weigth);
-        this->changeWeight2.valmul(koefInert * koefDropout);
+        this->changeWeight2.valmul(koefInert);
         this->changeWeight2.sum(this->changeWeight1);
 
         this->changeWeight1.copyValue(pLay[k]->weigth);
-        this->changeWeight1.valmul(koefRegular * koefDropout);
+        this->changeWeight1.valmul(koefRegular);
         pChangeLay[k]->weigth.sum(this->changeWeight1, this->changeWeight2);
     }
 
     // Cлой bias
     for(int k = 0; k < this->net->lay.getLength(); k++)
     {
-        koefDropout = (blDropout ? pLay[k]->getKoefDropout() : 1);
+        //koefDropout = (blDropout ? pLay[k]->getKoefDropout() : 1);
         this->changeBias1.copyValue(*pMas[k]);
-        this->changeBias1.valmul(koefTrain * koefDropout);
+        this->changeBias1.valmul(koefTrain);
 
         this->changeBias2.copyValue(pChangeLay[k]->bias);
-        this->changeBias2.valmul(koefInert * koefDropout);
+        this->changeBias2.valmul(koefInert);
         this->changeBias2.sum(this->changeBias1);
 
         this->changeBias1.copyValue(pLay[k]->bias);
-        this->changeBias1.valmul(koefRegular * koefDropout);
+        this->changeBias1.valmul(koefRegular);
         pChangeLay[k]->bias.sum(this->changeBias1, this->changeBias2);
     }
 }
@@ -898,6 +921,7 @@ void TrainBP<NType>::saveECSV(DataECSV& dt, string& parent)
     str_val = to_string(this->minErrorTest); dt.addElement(parent, "minErrorTest", str_val, typeid(NType).name());
     str_val = to_vstring(this->blErrorTest); dt.addElement(parent, "blErrorTest", str_val, typeid(bool).name());
     str_val = to_vstring(this->blDropout); dt.addElement(parent, "blDropout", str_val, typeid(bool).name());
+    str_val = to_vstring(this->blDropoutExm); dt.addElement(parent, "blDropoutExm", str_val, typeid(bool).name());
 
     str_val = to_string(this->epoches); dt.addElement(parent, "epoches", str_val, typeid(int).name());
     str_val = to_string(this->stabEnergy); dt.addElement(parent, "stabEnergy", str_val, typeid(int).name());
@@ -957,6 +981,7 @@ void TrainBP<NType>::loadECSV(DataECSV& dt, string& parent)
             else if(iter->getFieldValue(parent, "minErrorTest", str_val)) {to_value(minErrorTest, str_val);}
             else if(iter->getFieldValue(parent, "blErrorTest", str_val)) {to_value(this->blErrorTest, str_val);}
             else if(iter->getFieldValue(parent, "blDropout", str_val)) {to_value(this->blDropout, str_val);}
+            else if(iter->getFieldValue(parent, "blDropoutExm", str_val)) {to_value(this->blDropoutExm, str_val);}
 
             else if(iter->getFieldValue(parent, "epoches", str_val)) {to_value(this->epoches, str_val);}
             else if(iter->getFieldValue(parent, "stabEnergy", str_val)) {to_value(this->stabEnergy, str_val);}
