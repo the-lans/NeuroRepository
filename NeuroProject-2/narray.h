@@ -75,6 +75,7 @@ public:
     void init(int length, const NType& value); //Инициализация значением
     void init_value(const NType& value); //Инициализация значением
     void init_rand(std::default_random_engine& generator, const NType& valMin, const NType& valMax); //Инициализация случайными числами
+    void binary_shold(NType& value); //Применение порога
     void clear(); //Очистка массива
     void add(const NType& element, int pos, int count); //Вставка элемента в позицию
     void add(const NType& element, int pos); //Вставка элемента в позицию
@@ -119,6 +120,7 @@ public:
     NArray<NType>& mul(NMatrix<NType>& B, bool orient);
     NArray<NType>& mul(NArray<NType>& A, NMatrix<NType>& B, bool orient);
     NArray<NType>& mul(NMatrix<NType>& B, NArray<NType>& A, bool orient);
+    NArray<NType>& floor();
 };
 
 
@@ -501,13 +503,20 @@ void NArray<NType>::init_value(const NType& value)
 template <typename NType>
 void NArray<NType>::init_rand(std::default_random_engine& generator, const NType& valMin, const NType& valMax)
 {
-    std::uniform_real_distribution<> distribution(valMin, valMax);
+    std::uniform_real_distribution<NType> distribution(valMin, valMax);
     //NType koef = (valMax - valMin)/(NType)RAND_MAX;
     for(int i = 0; i < length; i++)
     {
         //data[i] = koef * (NType)rand() + valMin;
         data[i] = distribution(generator);
     }
+}
+
+template <typename NType>
+void NArray<NType>::binary_shold(NType& value)
+{
+    this->valsum(1-value);
+    this->floor();
 }
 
 template <typename NType>
@@ -1035,6 +1044,15 @@ template <typename NType>
 NArray<NType>& NArray<NType>::mul(NMatrix<NType>& B, NArray<NType>& A, bool orient)
 {
     return this->mul(A, B, orient);
+}
+
+template <typename NType>
+NArray<NType>& NArray<NType>::floor()
+{
+    for(int i = 0; i < length; i++)
+    {
+        data[i] = std::floor(data[i]);
+    }
 }
 
 #endif // NARRAY_H

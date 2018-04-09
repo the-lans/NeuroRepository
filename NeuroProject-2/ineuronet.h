@@ -354,7 +354,7 @@ void INeuroNet<NType>::init_slay()
     INLayer<NType>** pLay = this->lay.getData();
     for(int ind = 0; ind < this->lay.getLength(); ind++)
     {
-        pLay[ind]->init_slay();
+        if(pLay[ind]->getDropout() > 0) {pLay[ind]->init_slay();}
     }
     //cout << "slay = " << pLay[0]->slay.sumElements() << "\n";
 }
@@ -395,7 +395,8 @@ NArray<NType>* INeuroNet<NType>::run_dropout(NArray<NType>* X)
 
     for(int i = 0; i < this->lay.getLength(); i++)
     {
-        pLay[i]->run_dropout(input);
+        if(pLay[i]->getDropout() > 0) {pLay[i]->run_dropout(input);}
+        else {pLay[i]->run(input);}
         input = &(pLay[i]->output);
     }
 

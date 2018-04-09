@@ -63,6 +63,7 @@ public:
     void init(int lenRow, int lenColumn, const NType& value); //Инициализация матрицы значением
     void init_value(const NType& value); //Инициализация матрицы значением
     void init_rand(std::default_random_engine& generator, const NType& valMin, const NType& valMax); //Инициализация случайными числами
+    void binary_shold(NType& value); //Применение порога
     void clear(); //Очистка
     void addRow(int pos); //Добавление в матрицу новой строки
     void addRow(int pos, const NType &value);
@@ -121,6 +122,7 @@ public:
     NMatrix<NType>& matmul(NMatrix<NType>& B);
     NMatrix<NType>& valmul(const NType& B);
     NMatrix<NType>& valsign();
+    NMatrix<NType>& floor();
 };
 
 
@@ -383,22 +385,38 @@ void NMatrix<NType>::init(int lenRow, int lenColumn, const NType& value)
 template <typename NType>
 void NMatrix<NType>::init_value(const NType& value)
 {
-    for(int i = 0; i < lenRow * lenColumn; i++)
+    int i, j;
+    for(i = 0; i < lenRow; i++)
     {
-        data[i] = value;
+        for(j = 0; j < lenColumn; j++)
+        {
+            data[i*sizeColumn + j] = value;
+        }
     }
 }
 
 template <typename NType>
 void NMatrix<NType>::init_rand(std::default_random_engine& generator, const NType& valMin, const NType& valMax)
 {
-    std::uniform_real_distribution<> distribution(valMin, valMax);
-    //NType koef = (valMax - valMin)/(NType)RAND_MAX;
-    for(int i = 0; i < lenRow * lenColumn; i++)
+    int i, j;
+    std::uniform_real_distribution<NType> distribution(valMin, valMax);
+
+    for(i = 0; i < lenRow; i++)
     {
-        //data[i] = koef * (NType)rand() + valMin;
-        data[i] = distribution(generator);
+        //NType koef = (valMax - valMin)/(NType)RAND_MAX;
+        for(j = 0; j < lenColumn; j++)
+        {
+            //data[i*sizeColumn + j] = koef * (NType)rand() + valMin;
+            data[i*sizeColumn + j] = distribution(generator);
+        }
     }
+}
+
+template <typename NType>
+void NMatrix<NType>::binary_shold(NType& value)
+{
+    this->valsum(1-value);
+    this->floor();
 }
 
 template <typename NType>
@@ -1205,6 +1223,22 @@ NMatrix<NType>& NMatrix<NType>::valsign()
         }
     }
     return (*this);
+}
+
+template <typename NType>
+NMatrix<NType>& NMatrix<NType>::floor()
+{
+    int i, j;
+    NType* element;
+
+    for(i = 0; i < lenRow; i++)
+    {
+        for(j = 0; j < lenColumn; j++)
+        {
+            element = data + i*sizeColumn + j;
+            *element = std::floor(*element);
+        }
+    }
 }
 
 #endif // NMATRIX_H

@@ -18,7 +18,8 @@ public:
 public:
     NMatrix<NType> weigth; //Матрица весов
     NArray<NType> bias; //Вектор смещений
-    NArray<NType> slay; //Множитель dropout
+    NMatrix<NType> slay; //Веса при обучении
+    NMatrix<NType> mask_weigth; //Маска для весов
     NArray<NType> output; //Расчётный выход слоя
     NArray<NType> sum; //Промежуточные значения сумм
     NArray<NLayerType> typeNeurons; //Типы нейронов
@@ -105,7 +106,7 @@ template <typename NType>
 INLayer<NType>::INLayer(INLayer<NType>& obj):
     output(obj.output), sum(obj.sum),
     typeNeurons(obj.typeNeurons), activNeurons(obj.activNeurons), derivNeurons(obj.derivNeurons),
-    koefNeurons(obj.koefNeurons), slay(obj.slay)
+    koefNeurons(obj.koefNeurons), slay(obj.slay), mask_weigth(obj.mask_weigth)
 {
     this->weigth.copyFields(obj.weigth);
     this->bias.copyFields(obj.bias);
@@ -138,6 +139,7 @@ INLayer<NType>& INLayer<NType>::operator=(INLayer<NType>& obj)
     this->output = obj.output;
     this->sum = obj.sum;
     this->slay = obj.slay;
+    this->mask_weigth = obj.mask_weigth;
     this->typeNeurons = obj.typeNeurons;
     this->activNeurons = obj.activNeurons;
     this->derivNeurons = obj.derivNeurons;
@@ -269,6 +271,7 @@ void INLayer<NType>::deinit()
     this->output.clear();
     this->sum.clear();
     this->slay.clear();
+    this->mask_weigth.clear();
     //this->typeNeurons.clear();
     //this->activNeurons.clear();
     //this->derivNeurons.clear();
@@ -340,7 +343,11 @@ void INLayer<NType>::update_struct(int lenRow, int lenColumn)
 
     this->output.init(lenColumn, 0);
     this->sum.init(lenColumn, 0);
-    this->slay.init(lenColumn, 1);
+    if(this->dropout > 0)
+    {
+        this->slay.init(lenRow, lenColumn, 0);
+        this->mask_weigth.init(lenRow, lenColumn, 1);
+    }
     this->updateFuncNeurons();
 }
 
@@ -400,16 +407,8 @@ bool INLayer<NType>::empty()
 template <typename NType>
 void INLayer<NType>::init_slay()
 {
-    NType* pSlay = this->slay.getData();
-    std::uniform_real_distribution<NType> distribution(0, 1);
-    this->initKoefDropout();
-
-    for(int ind = 0; ind < this->slay.getLength(); ind++)
-    {
-        pSlay[ind] = (distribution(NRandGenerator) < this->dropout ? 0 : 1);
-    }
-    //this->slay.init_value(1);
-    //if(this->dropout > 0) {pSlay[0] = 0; pSlay[1] = 0; pSlay[2] = 0; pSlay[3] = 0;}
+    this->mask_weigth.init_rand(NRandGenerator, 0, 1);
+    this->mask_weigth.binary_shold(this->dropout);
 }
 
 template <typename NType>
@@ -442,7 +441,10 @@ NArray<NType>* INLayer<NType>::run_dropout(NArray<NType>* X)
     NType* pOut = output.getData();
     NType* pSum = sum.getData();
 
-    sum.mul(*X, weigth, true); //X.length = weigth.lenRow
+    slay = mask_weigth;
+    slay.matmul(weigth);
+    slay.valmul(koefDropout);
+    sum.mul(*X, slay, true); //X.length = weigth.lenRow
     sum.sum(bias);
 
     for(int i = 0; i < output.getLength(); i++)
@@ -451,8 +453,8 @@ NArray<NType>* INLayer<NType>::run_dropout(NArray<NType>* X)
         pOut[i] = activation(pSum[i], koefNeurons[i]);
     }
 
-    output.mul(slay);
-    output.valmul(koefDropout);
+    //output.mul(slay);
+    //output.valmul(koefDropout);
 
     return &(output);
 }
@@ -597,9 +599,9 @@ void INLayer<NType>::saveECSV(DataECSV& dt, string& parent)
 
     dt.addGroup(parent, "");
     to_matrix_string(str_mtrx, this->weigth); dt.addElement(parent, "weigth", str_mtrx, typeid(NType).name());
+    to_matrix_string(str_mtrx, this->mask_weigth); dt.addElement(parent, "mask_weigth", str_mtrx, typeid(NType).name());
 
     to_array_string(str_vec, this->bias); dt.addElement(parent, "bias", str_vec, typeid(NType).name());
-    to_array_string(str_vec, this->slay); dt.addElement(parent, "slay", str_vec, typeid(NType).name());
     to_array_string(str_vec, this->output); dt.addElement(parent, "output", str_vec, typeid(NType).name());
     to_array_string(str_vec, this->sum); dt.addElement(parent, "sum", str_vec, typeid(NType).name());
     to_array_string(str_vec, this->typeNeurons); dt.addElement(parent, "typeNeurons", str_vec, typeid(NType).name());
