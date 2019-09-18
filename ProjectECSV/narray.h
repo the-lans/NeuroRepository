@@ -75,6 +75,7 @@ public:
     void init(int length, const NType& value); //Инициализация значением
     void init_value(const NType& value); //Инициализация значением
     void init_rand(std::default_random_engine& generator, const NType& valMin, const NType& valMax); //Инициализация случайными числами
+    void binary_shold(NType& value); //Применение порога
     void clear(); //Очистка массива
     void add(const NType& element, int pos, int count); //Вставка элемента в позицию
     void add(const NType& element, int pos); //Вставка элемента в позицию
@@ -83,6 +84,8 @@ public:
     NType pop(); //Извлечение элемента с конца
     void set(const NType& element, int pos); //Установка значения элемента
     NType get(int pos); //Возврат элемента
+    int getIndex(const NType& element); //Возврат индекса первого вхождения элемента
+    NArray<NType>::iterator find(const NType& element);
     void resize(int size); //Изменение размерности массива
     void renew(); //Перевыделение памяти (все данные стираются)
     void renew(int size); //Перевыделение памяти (все данные стираются)
@@ -97,9 +100,17 @@ public:
     NArray<unsigned int>& toUInt(NArray<unsigned int>& dest); //Конвертация элементов массива в uint
     NType& endElement(); //Последний элемент
     void doMask(bool* mask); //Обнуление элементов по маске
+    bool booland(); //Сравнение элементов массива, операция AND
+    bool booland(NType valFalse);
+    bool boolor(); //Сравнение элементов массива, операция OR
+    bool boolor(NType valFalse);
 public:
-    NType sumElements();
+    NType sumElements(); //Сумма элементов
     NType sumElements(int sift);
+    NType maxElements(); //Максимум
+    int maxArg();
+    NType minElements(); //Минимум
+    int minArg();
     NArray<NType>& valsum(const NType& B);
     NArray<NType>& sum(NArray<NType>& B);
     NArray<NType>& sum(NArray<NType>& A, NArray<NType>& B);
@@ -115,6 +126,7 @@ public:
     NArray<NType>& mul(NMatrix<NType>& B, bool orient);
     NArray<NType>& mul(NArray<NType>& A, NMatrix<NType>& B, bool orient);
     NArray<NType>& mul(NMatrix<NType>& B, NArray<NType>& A, bool orient);
+    NArray<NType>& floor();
 };
 
 
@@ -497,13 +509,20 @@ void NArray<NType>::init_value(const NType& value)
 template <typename NType>
 void NArray<NType>::init_rand(std::default_random_engine& generator, const NType& valMin, const NType& valMax)
 {
-    std::uniform_real_distribution<> distribution(valMin, valMax);
+    std::uniform_real_distribution<NType> distribution(valMin, valMax);
     //NType koef = (valMax - valMin)/(NType)RAND_MAX;
     for(int i = 0; i < length; i++)
     {
         //data[i] = koef * (NType)rand() + valMin;
         data[i] = distribution(generator);
     }
+}
+
+template <typename NType>
+void NArray<NType>::binary_shold(NType& value)
+{
+    this->valsum(1-value);
+    this->floor();
 }
 
 template <typename NType>
@@ -606,6 +625,27 @@ void NArray<NType>::resize(int size)
             delete[] p;
         }
     }
+}
+
+template <typename NType>
+int NArray<NType>::getIndex(const NType& element)
+{
+    int ind = 0;
+    for(NArray<NType>::iterator iter = begin(); iter < end(); iter++)
+    {
+        if(*iter == element) {return ind;} ind++;
+    }
+    return ind;
+}
+
+template <typename NType>
+typename NArray<NType>::iterator NArray<NType>::find(const NType& element)
+{
+    for(NArray<NType>::iterator iter = begin(); iter < end(); iter++)
+    {
+        if(*iter == element) {return iter;}
+    }
+    return nullptr;
 }
 
 template <typename NType>
@@ -721,6 +761,42 @@ void NArray<NType>::doMask(bool* mask)
 }
 
 template <typename NType>
+bool NArray<NType>::booland()
+{
+    bool bl = true;
+    int ind = 0;
+    while(bl && ind < length) {bl = data[ind]; ind++;}
+    return bl;
+}
+
+template <typename NType>
+bool NArray<NType>::booland(NType valFalse)
+{
+    bool bl = true;
+    int ind = 0;
+    while(bl && ind < length) {bl = (data[ind] != valFalse); ind++;}
+    return bl;
+}
+
+template <typename NType>
+bool NArray<NType>::boolor()
+{
+    bool bl = false;
+    int ind = 0;
+    while(!bl && ind < length) {bl = data[ind]; ind++;}
+    return bl;
+}
+
+template <typename NType>
+bool NArray<NType>::boolor(NType valFalse)
+{
+    bool bl = false;
+    int ind = 0;
+    while(!bl && ind < length) {bl = (data[ind] != valFalse); ind++;}
+    return bl;
+}
+
+template <typename NType>
 NType NArray<NType>::sumElements()
 {
     NType total = 0;
@@ -740,6 +816,50 @@ NType NArray<NType>::sumElements(int shift)
         total += data[i];
     }
     return total;
+}
+
+template <typename NType>
+NType NArray<NType>::maxElements()
+{
+    NType total = data[0];
+    for(int i = 1; i < length; i++)
+    {
+        if(data[i] > total) {total = data[i];}
+    }
+    return total;
+}
+
+template <typename NType>
+int NArray<NType>::maxArg()
+{
+    int index = 0;
+    for(int i = 1; i < length; i++)
+    {
+        if(data[i] > data[index]) {index = i;}
+    }
+    return index;
+}
+
+template <typename NType>
+NType NArray<NType>::minElements()
+{
+    NType total = data[0];
+    for(int i = 1; i < length; i++)
+    {
+        if(data[i] < total) {total = data[i];}
+    }
+    return total;
+}
+
+template <typename NType>
+int NArray<NType>::minArg()
+{
+    int index = 0;
+    for(int i = 1; i < length; i++)
+    {
+        if(data[i] < data[index]) {index = i;}
+    }
+    return index;
 }
 
 template <typename NType>
@@ -987,6 +1107,15 @@ template <typename NType>
 NArray<NType>& NArray<NType>::mul(NMatrix<NType>& B, NArray<NType>& A, bool orient)
 {
     return this->mul(A, B, orient);
+}
+
+template <typename NType>
+NArray<NType>& NArray<NType>::floor()
+{
+    for(int i = 0; i < length; i++)
+    {
+        data[i] = std::floor(data[i]);
+    }
 }
 
 #endif // NARRAY_H

@@ -45,6 +45,7 @@ public:
     void seek_back(fstream& sm, long skback); //Перемещение указателя по отношению к началу файла
     void shiftIndexString(fstream& index_file); //Добавление к индексу размера индексного файла
 
+    bool create(string name); //Создание пустого файла
     bool read(string name); //Чтение данных из указанного файла
     bool write(string name); //Запись данных в указанный файл
     void readBody(fstream& in_file, long seekstop);
@@ -61,6 +62,9 @@ public:
     void seekw(fstream& out_file, bool seq); //Запись позиции текущего объекта
     bool unionHeadBody(string index_name, string body_name); //Объединение индексного файла и файла с данными
     void unionHeadBody(fstream& index_file, fstream& body_file);
+
+protected:
+    bool getline(fstream& in_file, string& str); //Чтение строки из файла
 
 public:
     StructECSV* addElement(string& parent, const string& field, string& value, string& type); //Добавление нового блока-элемента

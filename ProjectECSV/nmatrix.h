@@ -17,6 +17,7 @@ public:
     NMatrix<NType>& operator=(NMatrix<NType>& obj);
     ~NMatrix();
     NType* operator[](size_t pos);
+    NType* operator[](int pos);
 protected:
     NType* data; //Данные
     int lenRow; //Количество строк
@@ -43,6 +44,7 @@ public:
     typedef NType* iterator;
     typedef const NType* const_iterator;
     NType* at(size_t pos); //Возвращает массив из указанной строки
+    NType* at(int pos);
     NType& front(); //Первый элемент матрицы
     NType& back(); //Последний элемент матрицы
     NMatrix<NType>::iterator begin() {return this->data;}
@@ -63,6 +65,7 @@ public:
     void init(int lenRow, int lenColumn, const NType& value); //Инициализация матрицы значением
     void init_value(const NType& value); //Инициализация матрицы значением
     void init_rand(std::default_random_engine& generator, const NType& valMin, const NType& valMax); //Инициализация случайными числами
+    void binary_shold(NType& value); //Применение порога
     void clear(); //Очистка
     void addRow(int pos); //Добавление в матрицу новой строки
     void addRow(int pos, const NType &value);
@@ -111,6 +114,7 @@ public:
     void copyFields(NMatrix<NType>& obj); //Копирование полей
     void doMaskRow(bool* mask); //Обнуление элементов по маске
     void doMaskColumn(bool* mask); //Обнуление элементов по маске
+    void reversRow(); //Реверс строк в матрице
 public:
     NMatrix<NType>& sum(NMatrix<NType>& B);
     NMatrix<NType>& sum(NMatrix<NType>& A, NMatrix<NType>& B);
@@ -121,6 +125,7 @@ public:
     NMatrix<NType>& matmul(NMatrix<NType>& B);
     NMatrix<NType>& valmul(const NType& B);
     NMatrix<NType>& valsign();
+    NMatrix<NType>& floor();
 };
 
 
@@ -182,6 +187,12 @@ NMatrix<NType>::~NMatrix()
 
 template <typename NType>
 NType* NMatrix<NType>::operator[](size_t pos)
+{
+    return (this->data + (pos*this->sizeColumn));
+}
+
+template <typename NType>
+NType* NMatrix<NType>::operator[](int pos)
 {
     return (this->data + (pos*this->sizeColumn));
 }
@@ -272,6 +283,13 @@ template <typename NType>
 NType* NMatrix<NType>::at(size_t pos)
 {
     if(pos >= (size_t)this->lenRow) {throw std::out_of_range("NMatrix<NType>::at() : index is out of range");}
+    return (this->data + (pos * this->sizeColumn));
+}
+
+template <typename NType>
+NType* NMatrix<NType>::at(int pos)
+{
+    if(pos >= this->lenRow) {throw std::out_of_range("NMatrix<NType>::at() : index is out of range");}
     return (this->data + (pos * this->sizeColumn));
 }
 
@@ -383,22 +401,38 @@ void NMatrix<NType>::init(int lenRow, int lenColumn, const NType& value)
 template <typename NType>
 void NMatrix<NType>::init_value(const NType& value)
 {
-    for(int i = 0; i < lenRow * lenColumn; i++)
+    int i, j;
+    for(i = 0; i < lenRow; i++)
     {
-        data[i] = value;
+        for(j = 0; j < lenColumn; j++)
+        {
+            data[i*sizeColumn + j] = value;
+        }
     }
 }
 
 template <typename NType>
 void NMatrix<NType>::init_rand(std::default_random_engine& generator, const NType& valMin, const NType& valMax)
 {
-    std::uniform_real_distribution<> distribution(valMin, valMax);
-    //NType koef = (valMax - valMin)/(NType)RAND_MAX;
-    for(int i = 0; i < lenRow * lenColumn; i++)
+    int i, j;
+    std::uniform_real_distribution<NType> distribution(valMin, valMax);
+
+    for(i = 0; i < lenRow; i++)
     {
-        //data[i] = koef * (NType)rand() + valMin;
-        data[i] = distribution(generator);
+        //NType koef = (valMax - valMin)/(NType)RAND_MAX;
+        for(j = 0; j < lenColumn; j++)
+        {
+            //data[i*sizeColumn + j] = koef * (NType)rand() + valMin;
+            data[i*sizeColumn + j] = distribution(generator);
+        }
     }
+}
+
+template <typename NType>
+void NMatrix<NType>::binary_shold(NType& value)
+{
+    this->valsum(1-value);
+    this->floor();
 }
 
 template <typename NType>
@@ -970,6 +1004,24 @@ void NMatrix<NType>::doMaskColumn(bool* mask)
     }
 }
 
+template <typename NType>
+void NMatrix<NType>::reversRow()
+{
+    NType *data_vec1, *data_vec2;
+    int ind, jnd;
+    int num = lenRow / 2;
+
+    for(ind = 0; ind < num; ind++)
+    {
+        data_vec1 = this->at(ind);
+        data_vec2 = this->at(lenRow - ind - 1);
+        for(jnd = 0; jnd < lenColumn; jnd++)
+        {
+            std::swap(data_vec1[jnd], data_vec2[jnd]);
+        }
+    }
+}
+
 
 template <typename NType>
 NMatrix<NType>& NMatrix<NType>::sum(NMatrix<NType>& B)
@@ -1205,6 +1257,22 @@ NMatrix<NType>& NMatrix<NType>::valsign()
         }
     }
     return (*this);
+}
+
+template <typename NType>
+NMatrix<NType>& NMatrix<NType>::floor()
+{
+    int i, j;
+    NType* element;
+
+    for(i = 0; i < lenRow; i++)
+    {
+        for(j = 0; j < lenColumn; j++)
+        {
+            element = data + i*sizeColumn + j;
+            *element = std::floor(*element);
+        }
+    }
 }
 
 #endif // NMATRIX_H

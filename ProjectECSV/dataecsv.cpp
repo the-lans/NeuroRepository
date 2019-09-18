@@ -137,6 +137,18 @@ void DataECSV::shiftIndexString(fstream& index_file)
     }
 }
 
+bool DataECSV::create(string name)
+{
+    fstream out_file; //Открываем файл для записи
+    out_file.open(name, ios_base::out | ios_base::binary);
+    if(out_file.is_open())
+    {
+        out_file.close(); //Закрываем файл
+        return true;
+    }
+    return false;
+}
+
 bool DataECSV::read(string name)
 {
     this->clear();
@@ -181,10 +193,11 @@ void DataECSV::readBody(fstream& in_file, long seekstop)
     StructECSV* block = nullptr;
     long seek = in_file.tellg();
 
-    while(getline(in_file, str) && seek < seekstop)
+    while(this->getline(in_file, str) && seek < seekstop)
     {
         spec.clear();
         value_size.clear();
+        if(seek == 0) {trimBOM_utf8(str);}
         delcomment(str);
         trimstr(str);
 
@@ -264,8 +277,8 @@ void DataECSV::writeBody(fstream& out_file)
 
     out_file.seekp(0, ios_base::end);
     long fsize = out_file.tellp();
-    if(fsize > 0) {out_file << endl;}
     size_t num = this->modules.size();
+    if(fsize > 0 && num > 1) {out_file << endl;}
 
     for(size_t index = 0; index < num; index++)
     {
@@ -351,10 +364,11 @@ void DataECSV::readHead(fstream& in_file)
 
     in_file.seekg(0, ios_base::beg);
 
-    while(blExit && getline(in_file, str))
+    while(blExit && this->getline(in_file, str))
     {
         spec.clear();
         vec_str.clear();
+        if(skback == 0) {trimBOM_utf8(str);}
         delcomment(str);
         trimstr(str);
 
@@ -544,6 +558,11 @@ void DataECSV::unionHeadBody(fstream& index_file, fstream& body_file)
     index_file.flush();
 
     delete[] buffer;
+}
+
+bool DataECSV::getline(fstream& in_file, string& str)
+{
+    return std::getline(in_file, str);
 }
 
 

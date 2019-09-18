@@ -8,7 +8,8 @@ SOURCES += main.cpp \
     funcecsv.cpp \
     structecsv.cpp \
     subclass.cpp \
-    tempclass.cpp
+    tempclass.cpp \
+    funcsmart.cpp
 
 HEADERS += \
     dataecsv.h \
@@ -19,5 +20,7 @@ HEADERS += \
     nmatrix.h \
     nmatrixecsv.h \
     subclass.h \
-    tempclass.h
+    tempclass.h \
+    funcsmart.h \
+    defsmart.h
 

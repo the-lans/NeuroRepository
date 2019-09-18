@@ -1,4 +1,4 @@
-$base.val = 0.158 //Переменная TempClass
+﻿$base.val = 0.158 //Переменная TempClass
 $base.color = 0; 2; 1; 2 //Цвета
 
 //Субкласс
