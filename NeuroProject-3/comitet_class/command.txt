@@ -1,0 +1,36 @@
+2018-04-28 19:06:43; BegNPT
+; RunTrain
+2018-04-28 19:07:00; EndTrain
+; RunFunc
+2018-05-03 16:17:09; UpdateOut
+2018-05-03 16:55:57; EndNPT
+2018-05-10 16:36:00; BegNPT
+; RunTrain
+2018-05-10 16:36:25; EndTrain
+2018-05-10 16:36:31; EndNPT
+2018-05-10 16:36:37; BegNPT
+; RunTrain
+2018-05-10 16:36:47; EndTrain
+; RunFunc
+2018-05-10 16:36:54; UpdateOut
+; RunTrain
+2018-05-10 16:37:55; EndTrain
+; RunFunc
+2018-05-10 16:38:03; UpdateOut
+; RunTrain
+2018-05-10 16:39:11; EndTrain
+; RunFunc
+2018-05-10 16:39:33; UpdateOut
+2018-05-10 16:42:22; EndNPT
+2018-05-14 13:25:43; BegNPT
+; RunTrain
+2018-05-14 13:30:16; EndTrain
+; RunFunc
+2018-05-14 13:32:20; UpdateOut
+2018-05-14 13:43:49; EndNPT
+2019-09-21 18:30:32; BegNPT
+; RunTrain
+2019-09-21 18:32:02; EndTrain
+; RunFunc
+2019-09-21 18:33:20; UpdateOut
+2019-09-21 18:33:45; EndNPT

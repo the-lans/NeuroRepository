@@ -1,0 +1,6 @@
+$.names = NetClass1; NetClass2 //Имена нейросетей
+$.count_parallel = 2 //Количество одновременных потоков
+$.blShiftEnd = false //Нужно ли сдвигать выборку в конец?
+$.blOutdataAppend = true //Нужно ли дописывать информацию в конец файла outdata?
+$.blNCSave = true //Нужно ли сохранять данные после обучения
+$.trains_type = trainbp; trainbp //Типы алгоритмов обучения

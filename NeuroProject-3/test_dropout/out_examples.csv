@@ -1,0 +1,94 @@
+$.beginset = 0
+$Type = i
+
+$.testset = 1
+$Type = i
+
+$.validset = 1
+$Type = i
+
+$.endset = 1
+$Type = i
+
+$.limitset = 100
+$Type = i
+
+$.lenIn = 2
+$Type = i
+
+$.lenOut = 1
+$Type = i
+
+$.lenClass = 0
+$Type = i
+
+$.blClass = false
+$Type = b
+
+$.blFilter = false
+$Type = b
+
+$.valFilter = -0.001327
+$Type = f
+
+$.typeNormIn = None
+$Type = i
+
+$.typeNormOut = None
+$Type = i
+
+$.inMin = 0.000000
+$Type = f
+
+$.inMax = 1.000000
+$Type = f
+
+$.outMin = 0.000000
+$Type = f
+
+$.outMax = 1.000000
+$Type = f
+
+$.inKoef = 1.000000
+$Type = f
+
+$.outKoef = 1.000000
+$Type = f
+
+$.lenRand = 0
+$Type = i
+
+$.blClearTypeSet = true
+$Type = b
+
+$.sizeClass = 0
+$Type = i
+
+$.energyAver = 0.000000
+$Type = f
+
+$.energyMax = 0.000000
+$Type = f
+
+$.energySum = 0.000000
+$Type = f
+
+$.energyClass = 0
+$Type = i
+
+$.totalClass = 0
+$Type = i
+
+$.data.input
+$Type = f
+$Size = 2
+3.000000; 5.000000
+
+$.data.output = 8.000000
+$Type = f
+
+$.data.outrun = 3.588159
+$Type = f
+
+$.data.outpostrun = 3.588159
+$Type = f

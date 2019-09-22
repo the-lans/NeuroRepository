@@ -1,0 +1,141 @@
+$.typeLay
+$Type = i
+$Size = 2
+Linear; Linear
+
+$.lenNeurons
+$Type = i
+$Size = 3
+2; 2; 1
+
+$.koefLay
+$Type = f
+$Size = 2
+1.000000; 1.000000
+
+$.dropout
+$Type = f
+$Size = 2
+1.000000; 1.000000
+
+$.valueWeight = 0.500000
+$Type = f
+
+$.energyRegularization = 0.773510
+$Type = f
+
+$.shiftout = 0
+$Type = i
+
+$.typeInit = InitNone
+$Type = i
+
+$.lock
+$Type = b
+$Size = 3
+0; 0; 0
+
+$.blLock = false
+$Type = b
+
+$.typeTarget = MSE
+$Type = i
+
+$.shotNet
+$Type = f
+$Size = 9
+0.411384; 0.294109; 0.652307; 0.090181; -0.029539; -0.001964; 0.569520; 0.725389; 0.078908
+
+$[.lay]
+
+$.lay.weigth
+$Type = f
+$Size = 2; 2
+0.411384; 0.294109
+0.652307; 0.090181
+
+$.lay.bias
+$Type = f
+$Size = 2
+-0.029539; -0.001964
+
+$.lay.slay
+$Type = f
+$Size = 2
+1.000000; 1.000000
+
+$.lay.output
+$Type = f
+$Size = 2
+4.466152; 1.331267
+
+$.lay.sum
+$Type = f
+$Size = 2
+4.466152; 1.331267
+
+$.lay.typeNeurons
+$Type = f
+$Size = 2
+Linear; Linear
+
+$.lay.koefNeurons
+$Type = f
+$Size = 2
+1.000000; 1.000000
+
+$.lay.koef = 1.000000
+$Type = f
+
+$.lay.energyRegularization = 0.345126
+$Type = f
+
+$.lay.type = Linear
+$Type = i
+
+$.lay.typeDerivat = Out
+$Type = i
+
+$.lay.dropout = 0.500000
+$Type = f
+
+$[.lay]
+
+$.lay.weigth
+$Type = f
+$Size = 1; 2
+0.569520
+0.725389
+
+$.lay.bias = 0.078908
+$Type = f
+
+$.lay.slay = 1.000000
+$Type = f
+
+$.lay.output = 3.588159
+$Type = f
+
+$.lay.sum = 3.588159
+$Type = f
+
+$.lay.typeNeurons = Linear
+$Type = f
+
+$.lay.koefNeurons = 1.000000
+$Type = f
+
+$.lay.koef = 1.000000
+$Type = f
+
+$.lay.energyRegularization = 0.428385
+$Type = f
+
+$.lay.type = Linear
+$Type = i
+
+$.lay.typeDerivat = Out
+$Type = i
+
+$.lay.dropout = 0.000000
+$Type = f
