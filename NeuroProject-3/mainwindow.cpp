@@ -17,7 +17,7 @@ MainWindow::MainWindow(QWidget *parent):
     this->dt.setArrayBR(true);
     this->dir = "";
     //this->dir = "D:/ProgramProjects/NeuroProject/NeuroProject-3/tradeprofit_10_cartpole/cartpole2";
-    this->dir = "C:/Ilya/Flash/!ProgramProjects/NeuroProject/NeuroProject-3_BackUp 20181219/comitet_class";
+    //this->dir = "C:/Ilya/Flash/!ProgramProjects/NeuroProject/NeuroProject-3_BackUp 20181219/comitet_class";
     //this->dir = "C:/Ilya/Flash/!ProgramProjects/NeuroProject/NeuroProject-3/tradeprofit_10_cartpole/cartpole2";
     this->construct.setCurrentDir(dir.toStdString());
     this->pf.setPath(this->dir);
