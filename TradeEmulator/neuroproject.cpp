@@ -6,17 +6,17 @@ default_random_engine NRandGenerator;
 void init_random_generator()
 {
     //random_device rd;
-    NRandGenerator.seed(time(0));
+    NRandGenerator.seed(static_cast<unsigned int>(std::time(nullptr)));
 }
 
 float deltatime(clock_t start_time, clock_t end_time)
 {
-    return ((float)end_time - (float)start_time)/1000;
+    return static_cast<float>(end_time - start_time)/1000;
 }
 
 void time_srand()
 {
-    std::srand((unsigned)std::time(0));
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
 }
 
 void to_value(NLayerType& value, string str_val)
@@ -97,6 +97,22 @@ void to_value(NCommandNet& value, string str_val)
     else if(str_val == "ncsave") {value = NCommandNet::NComNCSave;}
     else if(str_val == "issave") {value = NCommandNet::NComIsSave;}
     else {value = NCommandNet::NComNone;}
+}
+
+void to_value(NTrainType& value, string str_val)
+{
+    str_to_lower(str_val);
+         if(str_val == "trainbp") {value = NTrainType::NTrainBPType;}
+    else if(str_val == "agent") {value = NTrainType::NAgentType;}
+    else {value = NTrainType::NTrainNone;}
+}
+
+void to_value(NOptimizerType& value, string str_val)
+{
+    str_to_lower(str_val);
+         if(str_val == "sgd") {value = NOptimizerType::NOptimizerSGD;}
+    else if(str_val == "adam") {value = NOptimizerType::NOptimizerAdam;}
+    else {value = NOptimizerType::NOptimizerNone;}
 }
 
 
@@ -181,18 +197,33 @@ string to_string(const NStatusNet& value)
     else {return "None";}
 }
 
+string to_string(const NTrainType& value)
+{
+    if(value == NTrainType::NTrainBPType) {return "TrainBP";}
+    else if(value == NTrainType::NAgentType) {return "Agent";}
+    else {return "None";}
+}
+
+string to_string(const NOptimizerType& value)
+{
+    if(value == NOptimizerType::NOptimizerSGD) {return "SGD";}
+    else if(value == NOptimizerType::NOptimizerAdam) {return "Adam";}
+    else {return "None";}
+}
+
 
 bool equalf(float A, float B, unsigned int maxUlps)
 {
-    int aInt = *(int*)(&A);
-    int bInt = *(int*)(&B);
+    int aInt = *(reinterpret_cast<int*>(&A));
+    int bInt = *(reinterpret_cast<int*>(&B));
+    int cInt = static_cast<int>(0x80000000);
     // Уберем знак в aInt, если есть, чтобы получить правильно упорядоченную последовательность
-    if(aInt < 0) {aInt = 0x80000000 - aInt;}
+    if(aInt < 0) {aInt = cInt - aInt;}
     //aInt &= 0x7fffffff;
     // Аналогично для bInt
-    if(bInt < 0) {bInt = 0x80000000 - bInt;}
+    if(bInt < 0) {bInt = cInt - bInt;}
     /*aInt &= 0x7fffffff;*/
-    unsigned int intDiff = abs(aInt - bInt);
+    unsigned int intDiff = static_cast<unsigned int>(abs(aInt - bInt));
     if(intDiff <= maxUlps) {return true;}
     return false;
 }

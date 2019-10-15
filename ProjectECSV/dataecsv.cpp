@@ -562,7 +562,7 @@ void DataECSV::unionHeadBody(fstream& index_file, fstream& body_file)
 
 bool DataECSV::getline(fstream& in_file, string& str)
 {
-    return std::getline(in_file, str);
+    return (bool)std::getline(in_file, str);
 }
 
 

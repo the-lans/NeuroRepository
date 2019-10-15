@@ -4,11 +4,20 @@
 //#include "narray.h"
 #include "nmatrix.h"
 #include "funcsmart.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 enum class TypeDataECSV {Element, String};
 
+void readFile(string& str, const string& fileName); //Чтение файла в строку
 TypeDataECSV str_to_element(string& dest, const string& str); //Преобразование строки в элемент
 vector<TypeDataECSV> str_to_element(vector<string>& vecstr); //Преобразование строки в элемент
+void split(NArray<string>& dest, const string& str, const char* delim); //Разделение строки на подстроки по разделителю
+void split(NArray<string>& dest, string str, NArray<string>& delim);
+void splitno(NArray<string>& dest, const string& str, const char* delim);
+void splitno(NArray<string>& dest, string str, NArray<string>& delim);
+void concat(string& str, NArray<string>& dest, const char* delim); //Сбор строки из подстрок
 
 
 //Преобразование матрицы значений в матрицу строк

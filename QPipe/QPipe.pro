@@ -29,4 +29,5 @@ HEADERS += \
     funcecsv.h \
     narray.h \
     nmatrix.h \
-    pipemessage.h
+    pipemessage.h \
+    defsmart.h

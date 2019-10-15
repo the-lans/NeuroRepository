@@ -62,7 +62,6 @@ bool PipeFile::open()
     QString lockname = QDir::tempPath() + "\\" + this->name + ".lock";
     this->fpipe.setFileName(filename);
     this->fblock = new QLockFile(lockname);
-    //this->fblock->setStaleLockTime(300000);
     this->stream.setDevice(&this->fpipe);
     this->blLoop = true;
     bool bl = this->fpipe.open(QIODevice::Append | QIODevice::ReadOnly);

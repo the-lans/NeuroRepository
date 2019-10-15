@@ -132,6 +132,37 @@ void split(vector<string>& dest, const string& str, const char* delim)
     if(ind2 < str.length()) {dest.push_back("");}
 }
 
+void split(vector<string>& dest, string str, vector<string>& delim)
+{
+    for(size_t ind = 1; ind < delim.size(); ind++) {replacestr(str, delim[ind], delim[0]);}
+    split(dest, str, delim[0].c_str());
+}
+
+void splitno(vector<string>& dest, const string& str, const char* delim)
+{
+    size_t cout_delim = strlen(delim);
+    size_t ind1 = 0, ind2 = 0;
+    string substr;
+
+    while(ind1 < str.length() && ind2 != std::string::npos)
+    {
+        ind2 = str.find(delim, ind1, cout_delim);
+        if(ind2 == std::string::npos) {ind2 = str.length();}
+        if(ind1 != ind2)
+        {
+            substr = str.substr(ind1, ind2 - ind1);
+            dest.push_back(substr);
+        }
+        ind1 = ind2 + cout_delim;
+    }
+}
+
+void splitno(vector<string>& dest, string str, vector<string>& delim)
+{
+    for(size_t ind = 1; ind < delim.size(); ind++) {replacestr(str, delim[ind], delim[0]);}
+    splitno(dest, str, delim[0].c_str());
+}
+
 //Разделение строки на подстроки по разделителю с учётом символа экранирования
 void split_no_slash(vector<string>& dest, const string& str, const char* delim)
 {
@@ -185,6 +216,18 @@ void concat(string& str, string* dest, int len, const char* delim)
     if(str.length() > len_delim) {str.erase(str.length()-len_delim, len_delim);}
 }
 
+//Замена подстроки
+void replacestr(string& str, const string& src, const string& dst)
+{
+    size_t pos = str.find(src);
+    while(pos != std::string::npos)
+    {
+        str.replace(pos, src.size(), dst);
+        pos = str.find(src, pos);
+    }
+}
+
+
 //Удаление концевых пробелов
 string& trimstr(string& s)
 {
@@ -195,6 +238,13 @@ string& trimstr(string& s)
     size_t tail = s.find_last_not_of(SPACES);
     if(tail != s.size() - 1) {s.erase(tail + 1);}
     return s;
+}
+
+int trimBOM_utf8(string& s)
+{
+    const char space[4] = {(char)239, (char)187, (char)191, '\0'};
+    if(s.find(space, 0, 3) == 0) {s.erase(0, 3); return 3;}
+    return 0;
 }
 
 //Преобразование символов в нижний регистр
@@ -286,6 +336,19 @@ void freeshield(vector<string>& vecstr)
     }
 }
 
+//Это число?
+bool isnumber(const string& str)
+{
+    if(!isdigit(str[0]) && str[0] != '-' && str[0] != '.') {return false;}
+
+    for(size_t ind = 1; ind < str.length(); ind++)
+    {
+        if(!isdigit(str[ind]) && str[ind] != '.') {return false;}
+    }
+
+    return true;
+}
+
 //Преобразование строки в значение
 void to_value(double& value, string& str_val)
 {
@@ -317,6 +380,16 @@ void to_value(bool& value, string str_val)
     str_to_lower(str_val);
     if(str_val == "false" || str_val == "0") {value = false;}
     else {value = true;}
+}
+
+void to_value(string& value, string& str_val)
+{
+    value = str_val;
+}
+
+string to_string(string& val)
+{
+    return val;
 }
 
 string to_vstring(bool& value)

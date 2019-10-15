@@ -1,14 +1,16 @@
 #ifndef NARRAY_H
 #define NARRAY_H
 
-#include "nmatrix.h"
+#include "defsmart.h"
 #include <mem.h>
 #include <stdexcept>
 #include <cstdlib>
 #include <ctime>
 #include <random>
+#include <vector>
 
 template <typename NType> class NMatrix;
+#include "nmatrix.h"
 
 template <typename NType>
 class NArray
@@ -34,6 +36,10 @@ public:
     int getBlock();
     void setLength(int len);
     int getLength();
+    int getLengthPlus();
+    int getLengthMinus();
+    int getLengthPlus(const NType& value);
+    int getLengthMinus(const NType& value);
     void setSize(int size);
     int getSize();
     void setData(NType* dt);
@@ -45,6 +51,9 @@ public:
 public:
     typedef NType* iterator;
     typedef const NType* const_iterator;
+    typedef NType (*funcArray)(NType);
+    typedef NType (*funcArrayRef)(NType&);
+public:
     NType& at(size_t pos); //Возврат элемента с проверкой
     NType& front(); //Первый элемент
     NType& back(); //Последний элемент
@@ -75,6 +84,9 @@ public:
     void init(int length, const NType& value); //Инициализация значением
     void init_value(const NType& value); //Инициализация значением
     void init_rand(std::default_random_engine& generator, const NType& valMin, const NType& valMax); //Инициализация случайными числами
+    void clip(int delta); //Обрезание массива с конца
+    void extend(int delta); //Расширение массива с конца
+    void extend(int delta, const NType& value); //Расширение массива с конца
     void binary_shold(NType& value); //Применение порога
     void clear(); //Очистка массива
     void add(const NType& element, int pos, int count); //Вставка элемента в позицию
@@ -86,6 +98,7 @@ public:
     NType get(int pos); //Возврат элемента
     int getIndex(const NType& element); //Возврат индекса первого вхождения элемента
     NArray<NType>::iterator find(const NType& element);
+    void setSumNormalize(const NType& aver, const NType& element, int pos); //Установка значения с нормализацией
     void resize(int size); //Изменение размерности массива
     void renew(); //Перевыделение памяти (все данные стираются)
     void renew(int size); //Перевыделение памяти (все данные стираются)
@@ -107,10 +120,25 @@ public:
 public:
     NType sumElements(); //Сумма элементов
     NType sumElements(int sift);
+    NType sumElements(int sift, int num);
     NType maxElements(); //Максимум
+    NType maxElements(int sift, int num);
     int maxArg();
+    int maxArg(int sift, int num);
     NType minElements(); //Минимум
+    NType minElements(int sift, int num);
     int minArg();
+    int minArg(int sift, int num);
+    NType mean(); //Среднее
+    NType std(); //Среднеквадратическое отклонение
+    void normalize(); //Нормализация по среднеквадратичному отклонению
+    void funcDiv(); //Сумма значений = 1
+    void funcExp(); //Вычисление экспоненты
+    void funcSoftMax(); //Вычисление softmax
+    void funcCalc(funcArray func); //Выполнение произвольной функции
+    void funcCalc(funcArrayRef func);
+    void funcCalc(NArray<NType>& obj, funcArray func);
+    void funcCalc(NArray<NType>& obj, funcArrayRef func);
     NArray<NType>& valsum(const NType& B);
     NArray<NType>& sum(NArray<NType>& B);
     NArray<NType>& sum(NArray<NType>& A, NArray<NType>& B);
@@ -234,6 +262,40 @@ int NArray<NType>::getLength()
 }
 
 template <typename NType>
+int NArray<NType>::getLengthPlus()
+{
+    return this->getLengthPlus(0);
+}
+
+template <typename NType>
+int NArray<NType>::getLengthMinus()
+{
+    return this->getLengthMinus(0);
+}
+
+template <typename NType>
+int NArray<NType>::getLengthPlus(const NType& value)
+{
+    int len = 0;
+    for(NArray<NType>::iterator iter = begin(); iter < end(); iter++)
+    {
+        if(*iter >= value) {len++;}
+    }
+    return len;
+}
+
+template <typename NType>
+int NArray<NType>::getLengthMinus(const NType& value)
+{
+    int len = 0;
+    for(NArray<NType>::iterator iter = begin(); iter < end(); iter++)
+    {
+        if(*iter < value) {len++;}
+    }
+    return len;
+}
+
+template <typename NType>
 void NArray<NType>::setSize(int size)
 {
     this->size = size;
@@ -291,7 +353,7 @@ bool NArray<NType>::getExtrn()
 template <typename NType>
 NType& NArray<NType>::at(size_t pos)
 {
-    if(pos >= (size_t)this->length) {throw std::out_of_range("NArray<NType>::at() : index is out of range");}
+    if(pos >= static_cast<size_t>(this->length)) {throw std::out_of_range("NArray<NType>::at() : index is out of range");}
     return this->data[pos];
 }
 
@@ -405,7 +467,7 @@ void NArray<NType>::swap(int ind, int jnd)
 template <typename NType>
 void NArray<NType>::srand()
 {
-    std::srand(unsigned(std::time(0)));
+    std::srand(unsigned(std::time(nullptr)));
 }
 
 template <typename NType>
@@ -515,6 +577,33 @@ void NArray<NType>::init_rand(std::default_random_engine& generator, const NType
     {
         //data[i] = koef * (NType)rand() + valMin;
         data[i] = distribution(generator);
+    }
+}
+
+template <typename NType>
+void NArray<NType>::clip(int delta)
+{
+    if(delta < this->length) {this->length -= delta;}
+    else {this->length = 0;}
+}
+
+template <typename NType>
+void NArray<NType>::extend(int delta)
+{
+    this->length += delta;
+    if(length > this->size)
+    {
+        this->resize(length);
+    }
+}
+
+template <typename NType>
+void NArray<NType>::extend(int delta, const NType& value)
+{
+    this->extend(delta);
+    for(int i = length - delta; i < length; i++)
+    {
+        data[i] = value;
     }
 }
 
@@ -649,6 +738,44 @@ typename NArray<NType>::iterator NArray<NType>::find(const NType& element)
 }
 
 template <typename NType>
+void NArray<NType>::setSumNormalize(const NType& aver, const NType& element, int pos)
+{
+    int ind;
+    NType deltaPlus = 0, deltaMinus = 0;
+    int lenPlus = this->getLengthPlus(aver);
+    int lenMinus = this->getLengthMinus(aver);
+
+    if(element >= aver && this->data[pos] >= aver && lenPlus > 1)
+    {
+        deltaPlus = (this->data[pos] - element) / (lenPlus - 1);
+    }
+    else if(element < aver && this->data[pos] < aver && lenMinus > 1)
+    {
+        deltaMinus = (this->data[pos] - element) / (lenMinus - 1);
+    }
+    else if(element >= aver)
+    {
+        deltaPlus = (aver - element) / (lenPlus - 1);
+        deltaMinus = (this->data[pos] - aver) / (lenMinus - 1);
+    }
+    else if(element < aver)
+    {
+        deltaPlus = (this->data[pos] - aver) / (lenPlus - 1);
+        deltaMinus = (aver - element) / (lenMinus - 1);
+    }
+
+    this->data[pos] = element;
+    for(ind = 0; ind < pos; ind++)
+    {
+        this->data[pos] += (this->data[pos] >= aver ? deltaPlus : deltaMinus);
+    }
+    for(ind = pos+1; ind < this->length; ind++)
+    {
+        this->data[pos] += (this->data[pos] >= aver ? deltaPlus : deltaMinus);
+    }
+}
+
+template <typename NType>
 void NArray<NType>::renew()
 {
     if(this->lock || this->extrn) {throw std::out_of_range("NArray<NType>::renew() : lock size");}
@@ -729,7 +856,7 @@ void NArray<NType>::convertUInt(NArray<unsigned int>& dest)
     this->clear();
     for(int i = 0; i < dest.getLength(); i++)
     {
-        this->push((NType)dest[i]);
+        this->push(static_cast<NType>(dest[i]));
     }
 }
 
@@ -739,7 +866,7 @@ NArray<unsigned int>& NArray<NType>::toUInt(NArray<unsigned int>& dest)
     dest.clear();
     for(int i = 0; i < this->length; i++)
     {
-        dest.push((unsigned int)this->data[i]);
+        dest.push(static_cast<unsigned int>(this->data[i]));
     }
     return dest;
 }
@@ -819,12 +946,34 @@ NType NArray<NType>::sumElements(int shift)
 }
 
 template <typename NType>
+NType NArray<NType>::sumElements(int shift, int num)
+{
+    NType total = 0;
+    for(int i = 0; i < num; i++)
+    {
+        total += data[i+shift];
+    }
+    return total;
+}
+
+template <typename NType>
 NType NArray<NType>::maxElements()
 {
     NType total = data[0];
     for(int i = 1; i < length; i++)
     {
         if(data[i] > total) {total = data[i];}
+    }
+    return total;
+}
+
+template <typename NType>
+NType NArray<NType>::maxElements(int sift, int num)
+{
+    NType total = data[sift];
+    for(int i = 1; i < num; i++)
+    {
+        if(data[i+sift] > total) {total = data[i+sift];}
     }
     return total;
 }
@@ -841,12 +990,34 @@ int NArray<NType>::maxArg()
 }
 
 template <typename NType>
+int NArray<NType>::maxArg(int sift, int num)
+{
+    int index = sift;
+    for(int i = 1; i < num; i++)
+    {
+        if(data[i+sift] > data[index]) {index = i+sift;}
+    }
+    return index;
+}
+
+template <typename NType>
 NType NArray<NType>::minElements()
 {
     NType total = data[0];
     for(int i = 1; i < length; i++)
     {
         if(data[i] < total) {total = data[i];}
+    }
+    return total;
+}
+
+template <typename NType>
+NType NArray<NType>::minElements(int sift, int num)
+{
+    NType total = data[sift];
+    for(int i = 1; i < num; i++)
+    {
+        if(data[i+sift] < total) {total = data[i+sift];}
     }
     return total;
 }
@@ -860,6 +1031,140 @@ int NArray<NType>::minArg()
         if(data[i] < data[index]) {index = i;}
     }
     return index;
+}
+
+template <typename NType>
+int NArray<NType>::minArg(int sift, int num)
+{
+    int index = sift;
+    for(int i = 1; i < num; i++)
+    {
+        if(data[i+sift] < data[index]) {index = i+sift;}
+    }
+    return index;
+}
+
+template <typename NType>
+NType NArray<NType>::mean()
+{
+    return this->sumElements() / this->length;
+}
+
+template <typename NType>
+NType NArray<NType>::std()
+{
+    NType result = 0;
+    NType aver = this->mean();
+    for(int ind = 0; ind < length; ind++)
+    {
+        result += NFUNC_SQR(data[ind] - aver);
+    }
+    return NFUNC_SQRT(result / this->length);
+}
+
+template <typename NType>
+void NArray<NType>::normalize()
+{
+    int ind;
+    NType std_result = 0;
+    NType aver = this->mean();
+    for(ind = 0; ind < length; ind++)
+    {
+        std_result += NFUNC_SQR(data[ind] - aver);
+    }
+    std_result = NFUNC_SQRT(std_result / this->length);
+
+    for(ind = 0; ind < length; ind++)
+    {
+        data[ind] = (data[ind] - aver) / std_result;
+    }
+}
+
+template <typename NType>
+void NArray<NType>::funcDiv()
+{
+    this->valdiv(this->sumElements());
+}
+
+template <typename NType>
+void NArray<NType>::funcExp()
+{
+    for(int ind = 0; ind < length; ind++)
+    {
+        data[ind] = NFUNC_EXP(data[ind]);
+    }
+}
+
+template <typename NType>
+void NArray<NType>::funcSoftMax()
+{
+    this->valsum(-this->maxElements());
+    this->funcExp();
+    this->funcDiv();
+}
+
+template <typename NType>
+void NArray<NType>::funcCalc(funcArray func)
+{
+    for(int ind = 0; ind < length; ind++)
+    {
+        data[ind] = func(data[ind]);
+    }
+}
+
+template <typename NType>
+void NArray<NType>::funcCalc(funcArrayRef func)
+{
+    for(int ind = 0; ind < length; ind++)
+    {
+        data[ind] = func(data[ind]);
+    }
+}
+
+template <typename NType>
+void NArray<NType>::funcCalc(NArray<NType>& obj, funcArray func)
+{
+    this->length = obj.getLength();
+    this->block = obj.getBlock();
+    //this->extrn = false;
+
+    if(this->length > this->size)
+    {
+        this->renew(this->length + this->block);
+    }
+
+    NType* pObj = obj.getData();
+    if(pObj != nullptr)
+    {
+        for(int ind = 0; ind < length; ind++)
+        {
+            data[ind] = func(pObj[ind]);
+        }
+    }
+    //this->lock = obj.getLock();
+}
+
+template <typename NType>
+void NArray<NType>::funcCalc(NArray<NType>& obj, funcArrayRef func)
+{
+    this->length = obj.getLength();
+    this->block = obj.getBlock();
+    //this->extrn = false;
+
+    if(this->length > this->size)
+    {
+        this->renew(this->length + this->block);
+    }
+
+    NType* pObj = obj.getData();
+    if(pObj != nullptr)
+    {
+        for(int ind = 0; ind < length; ind++)
+        {
+            data[ind] = func(pObj[ind]);
+        }
+    }
+    //this->lock = obj.getLock();
 }
 
 template <typename NType>

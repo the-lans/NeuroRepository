@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     QString number;
     QCoreApplication a(argc, argv);
     PipeFile ps("chanel");
-    ps.setPath("D:\\Ilya\\Prog\\QPipe\\");
+    ps.setPath("C:\\Ilya\\Flash\\!ProgramProjects\\NeuroRepository\\QPipe\\");
 
     cout << "Begin" << endl;
     if(!ps.exists()) {ps.create();}

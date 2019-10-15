@@ -9,7 +9,7 @@ int main()
     //Доступ к данным
     DataECSV dt;
     //string path = "E:\\!ProgramProjects\\NeuroProject\\ProjectECSV\\files\\";
-    string path = "D:\\Ilya\\Prog\\ProjectECSV\\files\\";
+    string path = "C:\\Ilya\\Flash\\!ProgramProjects\\NeuroRepository\\ProjectECSV\\files\\";
     string parent = ".base";
 
     //Объекты

@@ -1,12 +1,16 @@
 #ifndef NMATRIX_H
 #define NMATRIX_H
 
-#include "narray.h"
+#include "defsmart.h"
 #include <mem.h>
 #include <stdexcept>
+#include <cstdlib>
+#include <ctime>
+#include <random>
 #include <vector>
 
 template <typename NType> class NArray;
+#include "narray.h"
 
 template <typename NType>
 class NMatrix
@@ -17,6 +21,7 @@ public:
     NMatrix<NType>& operator=(NMatrix<NType>& obj);
     ~NMatrix();
     NType* operator[](size_t pos);
+    NType* operator[](int pos);
 protected:
     NType* data; //Данные
     int lenRow; //Количество строк
@@ -42,7 +47,11 @@ public:
 public:
     typedef NType* iterator;
     typedef const NType* const_iterator;
+    typedef NType (*funcMatrix)(NType);
+    typedef NType (*funcMatrixRef)(NType&);
+public:
     NType* at(size_t pos); //Возвращает массив из указанной строки
+    NType* at(int pos);
     NType& front(); //Первый элемент матрицы
     NType& back(); //Последний элемент матрицы
     NMatrix<NType>::iterator begin() {return this->data;}
@@ -112,7 +121,12 @@ public:
     void copyFields(NMatrix<NType>& obj); //Копирование полей
     void doMaskRow(bool* mask); //Обнуление элементов по маске
     void doMaskColumn(bool* mask); //Обнуление элементов по маске
+    void reversRow(); //Реверс строк в матрице
 public:
+    void funcCalc(funcMatrix func); //Выполнение произвольной функции
+    void funcCalc(funcMatrixRef func);
+    void funcCalc(NMatrix<NType>& obj, funcMatrix func);
+    void funcCalc(NMatrix<NType>& obj, funcMatrixRef func);
     NMatrix<NType>& sum(NMatrix<NType>& B);
     NMatrix<NType>& sum(NMatrix<NType>& A, NMatrix<NType>& B);
     NMatrix<NType>& valsum(const NType& B);
@@ -120,6 +134,9 @@ public:
     NMatrix<NType>& mul(NMatrix<NType>& B, bool orient);
     NMatrix<NType>& mul(NMatrix<NType>& A, NMatrix<NType>& B, bool orient);
     NMatrix<NType>& matmul(NMatrix<NType>& B);
+    NMatrix<NType>& matmul(NMatrix<NType>& A, NMatrix<NType>& B);
+    NMatrix<NType>& matdiv(NMatrix<NType>& B);
+    NMatrix<NType>& matdiv(NMatrix<NType>& A, NMatrix<NType>& B);
     NMatrix<NType>& valmul(const NType& B);
     NMatrix<NType>& valsign();
     NMatrix<NType>& floor();
@@ -184,6 +201,12 @@ NMatrix<NType>::~NMatrix()
 
 template <typename NType>
 NType* NMatrix<NType>::operator[](size_t pos)
+{
+    return (this->data + (pos*this->sizeColumn));
+}
+
+template <typename NType>
+NType* NMatrix<NType>::operator[](int pos)
 {
     return (this->data + (pos*this->sizeColumn));
 }
@@ -273,7 +296,14 @@ bool NMatrix<NType>::getExtrn()
 template <typename NType>
 NType* NMatrix<NType>::at(size_t pos)
 {
-    if(pos >= (size_t)this->lenRow) {throw std::out_of_range("NMatrix<NType>::at() : index is out of range");}
+    if(pos >= static_cast<size_t>(this->lenRow)) {throw std::out_of_range("NMatrix<NType>::at() : index is out of range");}
+    return (this->data + (pos * this->sizeColumn));
+}
+
+template <typename NType>
+NType* NMatrix<NType>::at(int pos)
+{
+    if(pos >= this->lenRow) {throw std::out_of_range("NMatrix<NType>::at() : index is out of range");}
     return (this->data + (pos * this->sizeColumn));
 }
 
@@ -704,7 +734,7 @@ template <typename NType>
 void NMatrix<NType>::setRow(int pos, std::vector<NType>& vec)
 {
     if(pos >= this->lenRow) {throw std::out_of_range("NMatrix<NType>::setRow() : index is out of range");}
-    if(vec.size() != (size_t)this->lenColumn) {throw std::out_of_range("NMatrix<NType>::setRow() : not length vector");}
+    if(vec.size() != static_cast<size_t>(this->lenColumn)) {throw std::out_of_range("NMatrix<NType>::setRow() : not length vector");}
 
     for(int j = 0; j < this->lenColumn; j++)
     {
@@ -855,7 +885,7 @@ template <typename NType>
 void NMatrix<NType>::dataCopy(NType* dst, NType* src, int newSizeColumn, int oldSizeColumn)
 {
     int i, j;
-    for(int i = 0; i < this->lenRow; i++)
+    for(i = 0; i < this->lenRow; i++)
     {
         for(j = 0; j < this->lenColumn; j++)
         {
@@ -988,6 +1018,110 @@ void NMatrix<NType>::doMaskColumn(bool* mask)
     }
 }
 
+template <typename NType>
+void NMatrix<NType>::reversRow()
+{
+    NType *data_vec1, *data_vec2;
+    int ind, jnd;
+    int num = lenRow / 2;
+
+    for(ind = 0; ind < num; ind++)
+    {
+        data_vec1 = this->at(ind);
+        data_vec2 = this->at(lenRow - ind - 1);
+        for(jnd = 0; jnd < lenColumn; jnd++)
+        {
+            std::swap(data_vec1[jnd], data_vec2[jnd]);
+        }
+    }
+}
+
+
+template <typename NType>
+void NMatrix<NType>::funcCalc(funcMatrix func)
+{
+    int i, j;
+    for(i = 0; i < lenRow; i++)
+    {
+        for(j = 0; j < lenColumn; j++)
+        {
+            data[i*sizeColumn + j] = func(data[i*sizeColumn + j]);
+        }
+    }
+}
+
+template <typename NType>
+void NMatrix<NType>::funcCalc(funcMatrixRef func)
+{
+    int i, j;
+    for(i = 0; i < lenRow; i++)
+    {
+        for(j = 0; j < lenColumn; j++)
+        {
+            data[i*sizeColumn + j] = func(data[i*sizeColumn + j]);
+        }
+    }
+}
+
+template <typename NType>
+void NMatrix<NType>::funcCalc(NMatrix<NType>& obj, funcMatrix func)
+{
+    int lenRow = obj.getLenRow();
+    int lenColumn = obj.getLenColumn();
+
+    if((lenRow > this->sizeRow)||(lenColumn > this->sizeColumn))
+    {
+        this->renew(lenRow, lenColumn);
+    }
+    this->lenRow = lenRow;
+    this->lenColumn = lenColumn;
+    //this->extrn = false;
+
+    int i, j;
+    NType* pObj = obj.getData();
+    int objSizeColumn = obj.getSizeColumn();
+    if(pObj != nullptr)
+    {
+        for(i = 0; i < lenRow; i++)
+        {
+            for(j = 0; j < lenColumn; j++)
+            {
+                data[i*sizeColumn + j] = func(pObj[i*objSizeColumn + j]);
+            }
+        }
+    }
+    //this->lock = obj.getLock();
+}
+
+template <typename NType>
+void NMatrix<NType>::funcCalc(NMatrix<NType>& obj, funcMatrixRef func)
+{
+    int lenRow = obj.getLenRow();
+    int lenColumn = obj.getLenColumn();
+
+    if((lenRow > this->sizeRow)||(lenColumn > this->sizeColumn))
+    {
+        this->renew(lenRow, lenColumn);
+    }
+    this->lenRow = lenRow;
+    this->lenColumn = lenColumn;
+    //this->extrn = false;
+
+    int i, j;
+    NType* pObj = obj.getData();
+    int objSizeColumn = obj.getSizeColumn();
+    if(pObj != nullptr)
+    {
+        for(i = 0; i < lenRow; i++)
+        {
+            for(j = 0; j < lenColumn; j++)
+            {
+                data[i*sizeColumn + j] = func(pObj[i*objSizeColumn + j]);
+            }
+        }
+    }
+    //this->lock = obj.getLock();
+}
 
 template <typename NType>
 NMatrix<NType>& NMatrix<NType>::sum(NMatrix<NType>& B)
@@ -1198,6 +1332,77 @@ NMatrix<NType>& NMatrix<NType>::matmul(NMatrix<NType>& B)
 }
 
 template <typename NType>
+NMatrix<NType>& NMatrix<NType>::matmul(NMatrix<NType>& A, NMatrix<NType>& B)
+{
+    int i, j;
+    NType* pA = A.getData();
+    NType* pB = B.getData();
+    int sizeColumnA = A.getSizeColumn();
+    int sizeColumnB = B.getSizeColumn();
+
+    this->init(A.getLenRow(), A.getLenColumn());
+    if(A.getLenRow() == B.getLenRow() && A.getLenColumn() == B.getLenColumn())
+    {
+        for(i = 0; i < lenRow; i++)
+        {
+            for(j = 0; j < lenColumn; j++)
+            {
+                data[i*sizeColumn + j] = pA[i*sizeColumnA + j] * pB[i*sizeColumnB + j];
+            }
+        }
+    }
+    else
+    {
+        throw "NMatrix: size is not matmul!";
+    }
+    return (*this);
+}
+
+template <typename NType>
+NMatrix<NType>& NMatrix<NType>::matdiv(NMatrix<NType>& B)
+{
+    int i, j;
+    NType* pB = B.getData();
+    int sizeColumnB = B.getSizeColumn();
+
+    for(i = 0; i < lenRow; i++)
+    {
+        for(j = 0; j < lenColumn; j++)
+        {
+            data[i*sizeColumn + j] /= pB[i*sizeColumnB + j];
+        }
+    }
+    return (*this);
+}
+
+template <typename NType>
+NMatrix<NType>& NMatrix<NType>::matdiv(NMatrix<NType>& A, NMatrix<NType>& B)
+{
+    int i, j;
+    NType* pA = A.getData();
+    NType* pB = B.getData();
+    int sizeColumnA = A.getSizeColumn();
+    int sizeColumnB = B.getSizeColumn();
+
+    this->init(A.getLenRow(), A.getLenColumn());
+    if(A.getLenRow() == B.getLenRow() && A.getLenColumn() == B.getLenColumn())
+    {
+        for(i = 0; i < lenRow; i++)
+        {
+            for(j = 0; j < lenColumn; j++)
+            {
+                data[i*sizeColumn + j] = pA[i*sizeColumnA + j] / pB[i*sizeColumnB + j];
+            }
+        }
+    }
+    else
+    {
+        throw "NMatrix: size is not matmul!";
+    }
+    return (*this);
+}
+
+template <typename NType>
 NMatrix<NType>& NMatrix<NType>::valmul(const NType& B)
 {
     int i, j;
@@ -1239,6 +1444,7 @@ NMatrix<NType>& NMatrix<NType>::floor()
             *element = std::floor(*element);
         }
     }
+    return (*this);
 }
 
 #endif // NMATRIX_H
