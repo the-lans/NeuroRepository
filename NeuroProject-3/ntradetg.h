@@ -459,7 +459,8 @@ void NTradeTg<NType>::loadECSV(DataECSV& dt, string& parent)
     string fieldZad = parent + ".dataZad";
     string fieldExamples = parent + ".examples";
 
-    NTradeTg<NType>::deinit();
+    //Выполнение операций перед загрузкой
+    if(!dt.isOneMatrix()) {NTradeTg<NType>::deinit();}
 
     if(dt.isOneMatrix())
     {
